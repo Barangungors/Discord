@@ -2,18 +2,24 @@ import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 
-// DİKKAT: Ngrok adımında buradaki 'http://localhost:3001' adresini değiştireceğiz!
-// Önceki hali: const socket = io('https://...ngrok.dev');
-const socket = io('https://discord-iifa.onrender.com');
+// Bağlantı Adresimiz
+const backendURL = 'https://discord-iifa.onrender.com';
+const socket = io(backendURL);
 
 const METIN_KANALLARI = ['genel-sohbet', 'yazilim', 'oyun-odasi', 'muzik'];
 const SES_KANALLARI = ['Lobi', 'Oyun Ses', 'Sohbet Odası'];
 
 function App() {
+  // --- YENİ KAYIT VE GİRİŞ STATE'LERİ ---
+  const [kayitModu, setKayitModu] = useState(false); // Formu Kayıt/Giriş arası geçiş yaptırır
+  const [email, setEmail] = useState('');
+  const [sifre, setSifre] = useState('');
   const [kullaniciAdiInput, setKullaniciAdiInput] = useState('');
+  const [hataMesaji, setHataMesaji] = useState('');
+
+  // --- TEMEL KULLANICI STATE'LERİ ---
   const [kullaniciAdi, setKullaniciAdi] = useState('');
   const [girisYapildi, setGirisYapildi] = useState(false);
-  
   const [ayarlarAcik, setAyarlarAcik] = useState(false);
   const [kullaniciDurumu, setKullaniciDurumu] = useState('Çevrimiçi');
   const [avatarRenk, setAvatarRenk] = useState('#00f3ff');
@@ -26,10 +32,58 @@ function App() {
   // --- SESLİ KANAL VE WEBRTC STATE'LERİ ---
   const [aktifSesKanalı, setAktifSesKanali] = useState(null);
   const [mikrofonAcik, setMikrofonAcik] = useState(false);
-  const [uzakSesler, setUzakSesler] = useState([]); // Karşıdan gelen ses objeleri (Stream'ler)
+  const [uzakSesler, setUzakSesler] = useState([]); 
   const medyaAkisiRef = useRef(null);
-  const peerBaglantilari = useRef({}); // Kiminle tünelimiz var
+  const peerBaglantilari = useRef({}); 
   const mesajlarSonuRef = useRef(null);
+
+  // --- YENİ: KAYIT OL FONKSİYONU ---
+  const kayitOlFormSubmit = async (e) => {
+    e.preventDefault();
+    setHataMesaji('');
+    try {
+      const res = await fetch(`${backendURL}/api/kayit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kullaniciAdi: kullaniciAdiInput, email, sifre })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert("Kayıt başarılı! Şimdi giriş yapabilirsin.");
+        setKayitModu(false); // Kayıt olunca giriş formuna at
+        setSifre(''); // Şifreyi temizle
+      } else {
+        setHataMesaji(data.hata);
+      }
+    } catch (err) {
+      setHataMesaji("Sunucuya bağlanılamadı. Lütfen tekrar dene.");
+    }
+  };
+
+  // --- YENİ: GİRİŞ YAP FONKSİYONU ---
+  const girisYapFormSubmit = async (e) => {
+    e.preventDefault();
+    setHataMesaji('');
+    try {
+      const res = await fetch(`${backendURL}/api/giris`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, sifre })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setKullaniciAdi(data.kullaniciAdi);
+        setAvatarRenk(data.avatarRenk || '#00f3ff');
+        setGirisYapildi(true); // Sisteme al
+      } else {
+        setHataMesaji(data.hata);
+      }
+    } catch (err) {
+      setHataMesaji("Sunucuya bağlanılamadı. Lütfen tekrar dene.");
+    }
+  };
 
   // 1. KULLANICI BİLGİSİ VE METİN KANALI SENKRONİZASYONU
   useEffect(() => {
@@ -42,7 +96,7 @@ function App() {
     }
   }, [aktifKanal, girisYapildi, kullaniciDurumu, avatarRenk]);
 
-  // 2. TEMEL SOKET DİNLEYİCİLERİ (Mesaj ve Liste)
+  // 2. TEMEL SOKET DİNLEYİCİLERİ
   useEffect(() => {
     socket.on('mesaj_al', (data) => setMesajListesi((eski) => [...eski, data]));
     socket.on('gecmis_mesajlar', (eskiMesajlar) => setMesajListesi(eskiMesajlar));
@@ -60,26 +114,19 @@ function App() {
     if(!aktifSesKanalı) return;
 
     const peerOlustur = (hedefID, arayanBenMiyim) => {
-      // Google'ın ücretsiz STUN sunucuları (IP adreslerini bulmak için)
       const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
       
-      // Kendi mikrofon sesimi tünele aktarıyorum
       if(medyaAkisiRef.current) {
         medyaAkisiRef.current.getTracks().forEach(track => peer.addTrack(track, medyaAkisiRef.current));
       }
 
-      // Karşıdan ses paketi geldiğinde (GÜNCELLENDİ)
       peer.ontrack = (event) => {
         setUzakSesler((eski) => {
-          // Aynı stream'in tekrar eklenmesini önle
-          if (!eski.includes(event.streams[0])) {
-            return [...eski, event.streams[0]];
-          }
+          if (!eski.includes(event.streams[0])) return [...eski, event.streams[0]];
           return eski;
         });
       };
 
-      // Bağlantı yolu bulunduğunda (ICE) karşıya ilet
       peer.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit('ice_adayi', { hedef: hedefID, aday: event.candidate });
@@ -89,7 +136,6 @@ function App() {
       return peer;
     };
 
-    // Biri sese girince (Aramayı başlatan taraf benim)
     socket.on('yeni_kullanici_ses_kanalinda', async (yeniKullaniciID) => {
       const peer = peerOlustur(yeniKullaniciID, true);
       peerBaglantilari.current[yeniKullaniciID] = peer;
@@ -98,7 +144,6 @@ function App() {
       socket.emit('ses_teklifi', { hedef: yeniKullaniciID, sdp: teklif });
     });
 
-    // Biri beni aradığında (Cevap veren tarafım)
     socket.on('ses_teklifi', async (data) => {
       const peer = peerOlustur(data.gonderen, false);
       peerBaglantilari.current[data.gonderen] = peer;
@@ -128,7 +173,6 @@ function App() {
     };
   }, [aktifSesKanalı]);
 
-  // Otomatik kaydırma
   useEffect(() => {
     mesajlarSonuRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mesajListesi]);
@@ -152,7 +196,6 @@ function App() {
       medyaAkisiRef.current.getTracks().forEach(track => track.stop());
       medyaAkisiRef.current = null;
     }
-    // Tüm P2P bağlantılarını kapat
     Object.values(peerBaglantilari.current).forEach(peer => peer.close());
     peerBaglantilari.current = {};
     setUzakSesler([]);
@@ -184,8 +227,6 @@ function App() {
     }
   };
 
-  const sohbeteKatil = () => { if (kullaniciAdiInput.trim() !== '') { setKullaniciAdi(kullaniciAdiInput); setGirisYapildi(true); } };
-  
   const durumRengiGetir = (durum) => {
     if(durum === 'Çevrimiçi') return '#00ff88'; 
     if(durum === 'Boşta') return '#ffea00'; 
@@ -199,19 +240,38 @@ function App() {
     'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin'),
   };
 
+  // --- YENİ EKRAN: GİRİŞ YAP / KAYIT OL ---
   if (!girisYapildi) {
     return (
       <div className="login-container futuristic-bg">
-        <div className="login-box glass-panel">
+        <div className="login-box glass-panel" style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
           <div className="neon-logo">NEXUS</div>
-          <h2>Sisteme Bağlan</h2>
-          <input type="text" placeholder="Kod adınızı girin..." value={kullaniciAdiInput} onChange={(e) => setKullaniciAdiInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sohbeteKatil()} autoFocus />
-          <button className="neon-button" onClick={sohbeteKatil}>Giriş Protokolünü Başlat</button>
+          <h2>{kayitModu ? 'Ajan Kaydı Oluştur' : 'Sisteme Bağlan'}</h2>
+          
+          {hataMesaji && <div style={{color: '#ff0055', textShadow: '0 0 5px #ff0055'}}>{hataMesaji}</div>}
+
+          {kayitModu ? (
+            <form onSubmit={kayitOlFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+              <input type="text" placeholder="Kod Adı" value={kullaniciAdiInput} onChange={(e) => setKullaniciAdiInput(e.target.value)} required />
+              <input type="email" placeholder="E-Posta Adresi" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <input type="password" placeholder="Şifre" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
+              <button type="submit" className="neon-button">Kayıt Ol</button>
+              <p onClick={() => {setKayitModu(false); setHataMesaji('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Zaten bir ajan mısın? Giriş Yap</p>
+            </form>
+          ) : (
+            <form onSubmit={girisYapFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+              <input type="email" placeholder="E-Posta Adresi" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+              <input type="password" placeholder="Şifre" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
+              <button type="submit" className="neon-button">Giriş Protokolünü Başlat</button>
+              <p onClick={() => {setKayitModu(true); setHataMesaji('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Yeni misin? Kayıt Ol</p>
+            </form>
+          )}
         </div>
       </div>
     );
   }
 
+  // --- ANA SOHBET EKRANI (DEĞİŞMEDİ) ---
   return (
     <div className="discord-layout">
       {ayarlarAcik && (
@@ -236,12 +296,10 @@ function App() {
         </div>
       )}
 
-      {/* SOL MENÜ */}
       <div className="server-sidebar">
         <div className="server-icon active" style={{boxShadow: `0 0 15px ${avatarRenk}`}}>NX</div>
       </div>
 
-      {/* İÇ MENÜ - KANALLAR */}
       <div className="channel-sidebar">
         <div className="server-header"><h3>NEXUS SUNUCUSU</h3></div>
         <div className="channel-list">
@@ -260,7 +318,6 @@ function App() {
           ))}
         </div>
 
-        {/* SES KONTROL PANELİ */}
         {aktifSesKanalı && (
           <div className="voice-control-panel glass-panel">
             <div className="voice-status">
@@ -289,7 +346,6 @@ function App() {
         </div>
       </div>
 
-      {/* SOHBET ALANI */}
       <div className="chat-area">
         <div className="chat-header">
           <span className="hash">#</span><h3>{aktifKanal}</h3>
@@ -323,7 +379,6 @@ function App() {
         </div>
       </div>
 
-      {/* SAĞ MENÜ (LİSTE) */}
       <div className="members-sidebar">
         <div className="members-header"><h3>AĞDAKİ ÜYELER</h3></div>
         <div className="members-list-content">
@@ -348,14 +403,12 @@ function App() {
         </div>
       </div>
 
-      {/* UZAK SESLERİ OYNATMA ALANI (Görünmez) - EKLENDİ */}
       <div style={{ display: 'none' }}>
         {uzakSesler.map((stream, index) => (
           <audio
             key={index}
             autoPlay
             ref={(audioElement) => {
-              // DOM'a eklendiğinde sesi bağla
               if (audioElement && audioElement.srcObject !== stream) {
                 audioElement.srcObject = stream;
               }
