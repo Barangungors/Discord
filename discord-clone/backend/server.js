@@ -2,11 +2,12 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const mongoose = require('mongoose'); // Mongoose eklendi
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt'); // Şifreleme için eklendi
 
 const app = express();
 app.use(cors());
-app.use(express.json()); // Sunucunun JSON verilerini okuyabilmesi için
+app.use(express.json()); // Sunucunun JSON (form) verilerini okuyabilmesi için
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
@@ -18,8 +19,63 @@ mongoose.connect(mongoURI)
   .then(() => console.log('📦 MongoDB Veritabanına Başarıyla Bağlanıldı!'))
   .catch((err) => console.log('❌ MongoDB Bağlantı Hatası:', err));
 
+// --- KULLANICI ŞEMASI (VERİTABANI MODELİ) ---
+const kullaniciSemasi = new mongoose.Schema({
+  kullaniciAdi: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  sifre: { type: String, required: true },
+  avatarRenk: { type: String, default: '#00f3ff' }
+});
 
-// -- Eski Soket Kodlarımız --
+const Kullanici = mongoose.model('Kullanici', kullaniciSemasi);
+
+// --- API ROTASI: KAYIT OL (REGISTER) ---
+app.post('/api/kayit', async (req, res) => {
+  try {
+    const { kullaniciAdi, email, sifre } = req.body;
+    
+    // Email veya kullanıcı adı zaten var mı kontrol et
+    const varMi = await Kullanici.findOne({ $or: [{ email }, { kullaniciAdi }] });
+    if (varMi) return res.status(400).json({ hata: "Bu e-posta veya kullanıcı adı zaten kullanımda." });
+
+    // Şifreyi şifrele (Hash)
+    const sifrelenmisSifre = await bcrypt.hash(sifre, 10);
+    
+    // Yeni kullanıcıyı kaydet
+    const yeniKullanici = new Kullanici({ kullaniciAdi, email, sifre: sifrelenmisSifre });
+    await yeniKullanici.save();
+    
+    res.status(201).json({ mesaj: "Kayıt işlemi başarılı! Sisteme giriş yapabilirsiniz." });
+  } catch (err) {
+    res.status(500).json({ hata: "Sunucu hatası oluştu." });
+  }
+});
+
+// --- API ROTASI: GİRİŞ YAP (LOGIN) ---
+app.post('/api/giris', async (req, res) => {
+  try {
+    const { email, sifre } = req.body;
+    
+    // Kullanıcıyı bul
+    const kullanici = await Kullanici.findOne({ email });
+    if (!kullanici) return res.status(404).json({ hata: "Bu e-posta adresiyle kayıtlı bir Nexus ajanı bulunamadı." });
+
+    // Şifreyi kontrol et
+    const sifreDogruMu = await bcrypt.compare(sifre, kullanici.sifre);
+    if (!sifreDogruMu) return res.status(400).json({ hata: "Şifre hatalı, erişim reddedildi." });
+
+    // Giriş başarılıysa kullanıcı verilerini frontend'e gönder
+    res.status(200).json({ 
+      kullaniciAdi: kullanici.kullaniciAdi, 
+      avatarRenk: kullanici.avatarRenk, 
+      email: kullanici.email 
+    });
+  } catch (err) {
+    res.status(500).json({ hata: "Sunucu hatası oluştu." });
+  }
+});
+
+// -- SOKET (GERÇEK ZAMANLI İLETİŞİM) KODLARI --
 const mesajGecmisi = { 'genel-sohbet': [], 'yazilim': [], 'oyun-odasi': [], 'muzik': [] };
 const aktifKullanicilar = {}; 
 
@@ -40,7 +96,6 @@ io.on('connection', (socket) => {
         });
         
         socket.join(kanalAdi);
-        
         aktifKullanicilar[socket.id] = { ...kullaniciBilgisi, id: socket.id, kanal: kanalAdi };
 
         if (eskiKanal && eskiKanal !== kanalAdi) kullaniciListesiniGuncelle(eskiKanal);
