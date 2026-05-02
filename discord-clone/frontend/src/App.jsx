@@ -11,8 +11,8 @@ const SES_KANALLARI = ['Lobi', 'Oyun Ses', 'Sohbet Odası'];
 
 function App() {
   // --- YENİ KAYIT VE GİRİŞ STATE'LERİ ---
-  const [kayitModu, setKayitModu] = useState(false); // Formu Kayıt/Giriş arası geçiş yaptırır
-  const [email, setEmail] = useState('');
+  const [kayitModu, setKayitModu] = useState(false); 
+  const [email, setEmail] = useState(''); // Artık Giriş ekranında Kod Adı veya Email tutacak
   const [sifre, setSifre] = useState('');
   const [kullaniciAdiInput, setKullaniciAdiInput] = useState('');
   const [hataMesaji, setHataMesaji] = useState('');
@@ -37,7 +37,7 @@ function App() {
   const peerBaglantilari = useRef({}); 
   const mesajlarSonuRef = useRef(null);
 
-  // --- YENİ: KAYIT OL FONKSİYONU ---
+  // --- KAYIT OL FONKSİYONU ---
   const kayitOlFormSubmit = async (e) => {
     e.preventDefault();
     setHataMesaji('');
@@ -51,8 +51,8 @@ function App() {
       
       if (res.ok) {
         alert("Kayıt başarılı! Şimdi giriş yapabilirsin.");
-        setKayitModu(false); // Kayıt olunca giriş formuna at
-        setSifre(''); // Şifreyi temizle
+        setKayitModu(false); 
+        setSifre(''); 
       } else {
         setHataMesaji(data.hata);
       }
@@ -61,7 +61,7 @@ function App() {
     }
   };
 
-  // --- YENİ: GİRİŞ YAP FONKSİYONU ---
+  // --- GİRİŞ YAP FONKSİYONU ---
   const girisYapFormSubmit = async (e) => {
     e.preventDefault();
     setHataMesaji('');
@@ -69,14 +69,14 @@ function App() {
       const res = await fetch(`${backendURL}/api/giris`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, sifre })
+        body: JSON.stringify({ identifier: email, sifre }) // Identifier gönderiyoruz
       });
       const data = await res.json();
 
       if (res.ok) {
         setKullaniciAdi(data.kullaniciAdi);
         setAvatarRenk(data.avatarRenk || '#00f3ff');
-        setGirisYapildi(true); // Sisteme al
+        setGirisYapildi(true); 
       } else {
         setHataMesaji(data.hata);
       }
@@ -173,6 +173,30 @@ function App() {
     };
   }, [aktifSesKanalı]);
 
+  // --- 4. HAYALET (GHOST) KULLANICI ÇÖZÜMÜ (YENİDEN BAĞLANMA) ---
+  useEffect(() => {
+    const yenidenBaglaninca = () => {
+      // Eğer kullanıcı zaten giriş yapmışsa ve bağlantı koptuysa/geri geldiyse
+      if (girisYapildi) {
+        socket.emit('kanala_katil', {
+          kanalAdi: aktifKanal,
+          kullaniciBilgisi: { kullaniciAdi, durum: kullaniciDurumu, renk: avatarRenk }
+        });
+        
+        if (aktifSesKanalı) {
+          socket.emit('sesli_kanala_katil', aktifSesKanalı);
+        }
+      }
+    };
+
+    socket.on('connect', yenidenBaglaninca);
+
+    return () => {
+      socket.off('connect', yenidenBaglaninca);
+    };
+  }, [girisYapildi, aktifKanal, kullaniciAdi, kullaniciDurumu, avatarRenk, aktifSesKanalı]);
+
+  // Otomatik kaydırma
   useEffect(() => {
     mesajlarSonuRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mesajListesi]);
@@ -240,7 +264,7 @@ function App() {
     'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin'),
   };
 
-  // --- YENİ EKRAN: GİRİŞ YAP / KAYIT OL ---
+  // --- EKRAN: GİRİŞ YAP / KAYIT OL ---
   if (!girisYapildi) {
     return (
       <div className="login-container futuristic-bg">
@@ -256,14 +280,14 @@ function App() {
               <input type="email" placeholder="E-Posta Adresi" value={email} onChange={(e) => setEmail(e.target.value)} required />
               <input type="password" placeholder="Şifre" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
               <button type="submit" className="neon-button">Kayıt Ol</button>
-              <p onClick={() => {setKayitModu(false); setHataMesaji('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Zaten bir ajan mısın? Giriş Yap</p>
+              <p onClick={() => {setKayitModu(false); setHataMesaji(''); setEmail(''); setSifre('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Zaten bir ajan mısın? Giriş Yap</p>
             </form>
           ) : (
             <form onSubmit={girisYapFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-              <input type="email" placeholder="E-Posta Adresi" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+              <input type="text" placeholder="E-Posta veya Kod Adı" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
               <input type="password" placeholder="Şifre" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
               <button type="submit" className="neon-button">Giriş Protokolünü Başlat</button>
-              <p onClick={() => {setKayitModu(true); setHataMesaji('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Yeni misin? Kayıt Ol</p>
+              <p onClick={() => {setKayitModu(true); setHataMesaji(''); setEmail(''); setSifre('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Yeni misin? Kayıt Ol</p>
             </form>
           )}
         </div>
@@ -271,7 +295,7 @@ function App() {
     );
   }
 
-  // --- ANA SOHBET EKRANI (DEĞİŞMEDİ) ---
+  // --- ANA SOHBET EKRANI ---
   return (
     <div className="discord-layout">
       {ayarlarAcik && (
