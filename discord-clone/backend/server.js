@@ -2,13 +2,24 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const mongoose = require('mongoose'); // Mongoose eklendi
 
 const app = express();
 app.use(cors());
+app.use(express.json()); // Sunucunun JSON verilerini okuyabilmesi için
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 
+// --- MONGODB BAĞLANTISI ---
+const mongoURI = "mongodb+srv://barangungors:Selamun14!@sensei.ruwmpft.mongodb.net/discord-clone?retryWrites=true&w=majority";
+
+mongoose.connect(mongoURI)
+  .then(() => console.log('📦 MongoDB Veritabanına Başarıyla Bağlanıldı!'))
+  .catch((err) => console.log('❌ MongoDB Bağlantı Hatası:', err));
+
+
+// -- Eski Soket Kodlarımız --
 const mesajGecmisi = { 'genel-sohbet': [], 'yazilim': [], 'oyun-odasi': [], 'muzik': [] };
 const aktifKullanicilar = {}; 
 
@@ -20,7 +31,6 @@ const kullaniciListesiniGuncelle = (kanalAdi) => {
 io.on('connection', (socket) => {
     console.log(`🟢 Bağlantı sağlandı: ${socket.id}`);
 
-    // Geliştirilmiş Kanala Katılma ve Liste Senkronizasyonu
     socket.on('kanala_katil', (veri) => {
         const { kanalAdi, kullaniciBilgisi } = veri;
         const eskiKanal = aktifKullanicilar[socket.id]?.kanal;
@@ -31,12 +41,7 @@ io.on('connection', (socket) => {
         
         socket.join(kanalAdi);
         
-        // Kullanıcıyı hafızaya kaydet
-        aktifKullanicilar[socket.id] = { 
-            ...kullaniciBilgisi, 
-            id: socket.id, 
-            kanal: kanalAdi 
-        };
+        aktifKullanicilar[socket.id] = { ...kullaniciBilgisi, id: socket.id, kanal: kanalAdi };
 
         if (eskiKanal && eskiKanal !== kanalAdi) kullaniciListesiniGuncelle(eskiKanal);
         kullaniciListesiniGuncelle(kanalAdi);
@@ -45,33 +50,19 @@ io.on('connection', (socket) => {
         socket.emit('gecmis_mesajlar', mesajGecmisi[kanalAdi]);
     });
 
-    // Birisi sesli kanala girdiğinde odadakilere "Ben geldim, beni arayın" der
     socket.on('sesli_kanala_katil', (kanalAdi) => {
-        socket.join(kanalAdi + "_ses"); // Ses kanalları metin kanallarından farklı bir oda (room) olsun
-        // Odadaki diğer kişilere yeni gelenin ID'sini gönder ki onu çaldırsınlar
+        socket.join(kanalAdi + "_ses"); 
         socket.to(kanalAdi + "_ses").emit('yeni_kullanici_ses_kanalinda', socket.id);
     });
 
-    // Sesli kanaldan çıkış
     socket.on('sesli_kanaldan_ayril', (kanalAdi) => {
         socket.leave(kanalAdi + "_ses");
         socket.to(kanalAdi + "_ses").emit('kullanici_sesten_ayrildi', socket.id);
     });
 
-    // Arama Teklifi (Offer)
-    socket.on('ses_teklifi', (data) => {
-        io.to(data.hedef).emit('ses_teklifi', { sdp: data.sdp, gonderen: socket.id });
-    });
-
-    // Aramaya Cevap (Answer)
-    socket.on('ses_cevabi', (data) => {
-        io.to(data.hedef).emit('ses_cevabi', { sdp: data.sdp, gonderen: socket.id });
-    });
-
-    // Güvenlik Duvarı Aşma (ICE Candidates)
-    socket.on('ice_adayi', (data) => {
-        io.to(data.hedef).emit('ice_adayi', { aday: data.aday, gonderen: socket.id });
-    });
+    socket.on('ses_teklifi', (data) => io.to(data.hedef).emit('ses_teklifi', { sdp: data.sdp, gonderen: socket.id }));
+    socket.on('ses_cevabi', (data) => io.to(data.hedef).emit('ses_cevabi', { sdp: data.sdp, gonderen: socket.id }));
+    socket.on('ice_adayi', (data) => io.to(data.hedef).emit('ice_adayi', { aday: data.aday, gonderen: socket.id }));
 
     socket.on('mesaj_gonder', (data) => {
         if (!mesajGecmisi[data.kanal]) mesajGecmisi[data.kanal] = [];
@@ -88,6 +79,5 @@ io.on('connection', (socket) => {
     });
 });
 
-// Port ayarı güncellendi
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`🚀 Fütüristik Sunucu ${PORT} portunda aktif.`));
