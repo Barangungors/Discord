@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; }
+
+body { background-color: #0b0f19; color: #e2e8f0; overflow: hidden; }
+
+/* ANIMASYONLAR */
+@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulseGlow { 0% { box-shadow: 0 0 5px #00f3ff; } 50% { box-shadow: 0 0 20px #00f3ff; } 100% { box-shadow: 0 0 5px #00f3ff; } }
+
+.animate-slide-in { animation: slideIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+.animate-fade-in { animation: fadeIn 0.5s ease forwards; }
+
+/* GLASSMORPHISM PANEL TASARIMI */
+.glass-panel {
+  background: rgba(16, 23, 41, 0.7); backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 243, 255, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* GİRİŞ EKRANI */
+.futuristic-bg {
+  background: radial-gradient(circle at center, #0b0f19 0%, #05070a 100%);
+  background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+.login-container { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; }
+.login-box { padding: 40px; border-radius: 12px; width: 450px; text-align: center; }
+.neon-logo { font-size: 36px; font-weight: 700; color: #00f3ff; text-shadow: 0 0 15px #00f3ff; margin-bottom: 20px; letter-spacing: 4px;}
+.login-box h2 { font-size: 20px; margin-bottom: 24px; color: #a0aec0; text-transform: uppercase; letter-spacing: 2px;}
+.login-box input {
+  width: 100%; padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #2d3748;
+  border-radius: 6px; color: #fff; margin-bottom: 24px; font-size: 16px; transition: 0.3s;
+}
+.login-box input:focus { border-color: #00f3ff; box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); outline: none; }
+.neon-button {
+  width: 100%; padding: 15px; background: linear-gradient(45deg, #00f3ff, #0088ff);
+  color: #000; font-weight: 700; border: none; border-radius: 6px; font-size: 16px;
+  cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;
+}
+.neon-button:hover { box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); transform: translateY(-2px); }
+
+/* ANA YAPI */
+.discord-layout { display: flex; height: 100vh; width: 100vw; background: #0b0f19;}
+
+/* SUNUCULAR */
+.server-sidebar { width: 75px; background: #05070a; display: flex; flex-direction: column; align-items: center; padding-top: 15px; border-right: 1px solid #1a202c; }
+.server-icon { width: 50px; height: 50px; background: #1a202c; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-weight: 700; color: #fff; transition: 0.3s; }
+
+/* KANALLAR */
+.channel-sidebar { width: 250px; background: #0f1524; display: flex; flex-direction: column; border-right: 1px solid #1a202c; }
+.server-header { padding: 0 20px; height: 60px; display: flex; align-items: center; border-bottom: 1px solid #1a202c; background: rgba(0, 243, 255, 0.05); }
+.server-header h3 { color: #00f3ff; font-size: 18px; letter-spacing: 2px; text-shadow: 0 0 5px rgba(0,243,255,0.5);}
+.channel-list { flex: 1; padding: 20px 10px; overflow-y: auto; }
+.category-title { font-size: 13px; font-weight: 700; color: #4a5568; letter-spacing: 2px; margin-bottom: 10px; padding-left: 10px; }
+.channel-item { padding: 10px; margin-bottom: 5px; border-radius: 6px; color: #a0aec0; cursor: pointer; transition: 0.2s; font-size: 16px; font-weight: 600;}
+.channel-item:hover { background: rgba(255,255,255,0.05); color: #fff; transform: translateX(5px); }
+.channel-item.active { background: rgba(0, 243, 255, 0.1); color: #00f3ff; border-left: 3px solid #00f3ff; }
+.channel-item .hash { color: #4a5568; margin-right: 8px; }
+
+/* SES KANALLARI İÇİN ÖZEL */
+.voice-channel { color: #8e62ff; }
+.voice-channel:hover { background: rgba(142, 98, 255, 0.1); color: #b999ff; }
+.voice-channel.voice-active { background: rgba(142, 98, 255, 0.2); color: #d4c4ff; border-left: 3px solid #8e62ff; }
+
+/* SES KONTROL PANELİ */
+.voice-control-panel { padding: 15px; margin: 0 10px 10px 10px; border-radius: 8px; border-color: rgba(142, 98, 255, 0.3); }
+.voice-status { display: flex; align-items: center; color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.pulse-dot { width: 10px; height: 10px; background: #00ff88; border-radius: 50%; margin-right: 10px; box-shadow: 0 0 10px #00ff88; animation: pulseGlow 2s infinite; }
+.voice-actions { display: flex; gap: 10px; }
+.mic-btn, .disconnect-btn { flex: 1; padding: 8px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 12px; transition: 0.2s;}
+.mic-btn { background: rgba(255,255,255,0.1); color: #fff; }
+.mic-btn.muted { background: rgba(255, 0, 85, 0.2); color: #ff0055; }
+.disconnect-btn { background: rgba(255, 0, 85, 0.1); color: #ff0055; }
+.disconnect-btn:hover { background: #ff0055; color: #fff; }
+
+/* PROFİL ÇUBUĞU */
+.user-profile-bar { height: 65px; background: #0b0f19; padding: 0 15px; display: flex; align-items: center; border-top: 1px solid #1a202c; }
+.avatar-wrapper { position: relative; margin-right: 15px; }
+.avatar, .member-avatar { width: 36px; height: 36px; border-radius: 8px; /* Yuvarlak yerine hafif köşeli avatar */ transition: 0.3s; }
+.status-dot { position: absolute; bottom: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0b0f19; }
+.user-info { flex: 1; display: flex; flex-direction: column; }
+.username { font-weight: 700; font-size: 15px; color: #fff; }
+.status { font-size: 12px; color: #a0aec0; }
+.settings-icon { font-size: 20px; cursor: pointer; color: #a0aec0; transition: 0.3s; }
+.settings-icon:hover { color: #00f3ff; transform: rotate(90deg); }
+
+/* SOHBET ALANI */
+.chat-area { flex: 1; display: flex; flex-direction: column; background: #0b0f19; }
+.chat-header { height: 60px; padding: 0 20px; display: flex; align-items: center; border-bottom: 1px solid #1a202c; background: rgba(255,255,255,0.02); }
+.chat-header h3 { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+.messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+.empty-chat { margin-top: auto; padding-bottom: 20px; }
+.empty-chat h3 { font-size: 36px; font-weight: 700; margin-bottom: 10px; letter-spacing: 2px;}
+.message { display: flex; padding: 10px 20px; margin-top: 10px; border-radius: 8px; transition: 0.2s; border-left: 2px solid transparent; }
+.message:hover { background: rgba(255,255,255,0.03); border-left-color: rgba(255,255,255,0.2); }
+.message-avatar { width: 45px; height: 45px; border-radius: 10px; margin-right: 20px; }
+.message-header { margin-bottom: 6px; }
+.message-username { font-size: 17px; font-weight: 700; margin-right: 10px; letter-spacing: 0.5px;}
+.message-time { font-size: 12px; color: #4a5568; }
+.message-text { font-size: 16px; font-weight: 500; color: #cbd5e0; line-height: 1.5; }
+
+.message-input-area { padding: 20px; }
+.glass-input { background: rgba(15, 21, 36, 0.8); border: 1px solid #1a202c; border-radius: 8px; padding: 15px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+.glass-input input { width: 100%; background: transparent; border: none; color: #fff; font-size: 16px; font-weight: 500; outline: none; }
+
+/* SAĞ MENÜ (ÜYELER) */
+.members-sidebar { width: 250px; background: #0f1524; display: flex; flex-direction: column; border-left: 1px solid #1a202c; }
+.members-header { height: 60px; padding: 0 20px; display: flex; align-items: center; border-bottom: 1px solid #1a202c; }
+.members-header h3 { font-size: 14px; letter-spacing: 2px; color: #a0aec0; }
+.members-list-content { padding: 20px 10px; overflow-y: auto; }
+.member-group { margin-bottom: 25px; }
+.member-group h4 { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 10px; padding-left: 10px; }
+.member-item { display: flex; align-items: center; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+.member-item:hover { background: rgba(255,255,255,0.05); transform: translateX(-5px); }
+.member-item .status-dot { border-color: #0f1524; }
+.member-name { font-size: 16px; font-weight: 600; margin-left: 15px; letter-spacing: 0.5px;}
+
+/* AYARLAR */
+.settings-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; animation: fadeIn 0.2s; }
+.settings-modal { width: 400px; padding: 40px; border-radius: 12px; border-color: rgba(0,243,255,0.3); }
+.settings-modal h2 { font-size: 24px; color: #00f3ff; text-align: center; margin-bottom: 30px; letter-spacing: 2px;}
+.setting-group { margin-bottom: 25px; }
+.setting-group label { display: block; color: #a0aec0; font-size: 14px; margin-bottom: 10px; letter-spacing: 1px;}
+.settings-modal select { width: 100%; background: #05070a; color: #fff; padding: 12px; border: 1px solid #1a202c; border-radius: 6px; outline: none; }
+.color-picker { width: 100%; height: 50px; border: none; border-radius: 6px; background: transparent; cursor: pointer; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #4a5568; }

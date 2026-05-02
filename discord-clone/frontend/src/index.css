@@ -1,0 +1,6 @@
+/* frontend/src/index.css dosyasının YENİ hali */
+#root {
+  width: 100vw;
+  height: 100vh;
+  text-align: left;
+}
