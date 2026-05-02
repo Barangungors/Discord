@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt'); // Şifreleme için eklendi
+const bcrypt = require('bcrypt'); // Şifreleme kütüphanesi
 
 const app = express();
 app.use(cors());
@@ -34,9 +34,9 @@ app.post('/api/kayit', async (req, res) => {
   try {
     const { kullaniciAdi, email, sifre } = req.body;
     
-    // Email veya kullanıcı adı zaten var mı kontrol et
+    // Email veya kullanıcı adı zaten var mı kontrol et ($or operatörü)
     const varMi = await Kullanici.findOne({ $or: [{ email }, { kullaniciAdi }] });
-    if (varMi) return res.status(400).json({ hata: "Bu e-posta veya kullanıcı adı zaten kullanımda." });
+    if (varMi) return res.status(400).json({ hata: "Bu e-posta veya kod adı zaten kullanımda." });
 
     // Şifreyi şifrele (Hash)
     const sifrelenmisSifre = await bcrypt.hash(sifre, 10);
@@ -54,11 +54,14 @@ app.post('/api/kayit', async (req, res) => {
 // --- API ROTASI: GİRİŞ YAP (LOGIN) ---
 app.post('/api/giris', async (req, res) => {
   try {
-    const { email, sifre } = req.body;
+    const { identifier, sifre } = req.body; 
     
-    // Kullanıcıyı bul
-    const kullanici = await Kullanici.findOne({ email });
-    if (!kullanici) return res.status(404).json({ hata: "Bu e-posta adresiyle kayıtlı bir Nexus ajanı bulunamadı." });
+    // Kullanıcıyı bul: Email VEYA Kullanıcı Adı ile ara ($or operatörü)
+    const kullanici = await Kullanici.findOne({
+      $or: [{ email: identifier }, { kullaniciAdi: identifier }]
+    });
+
+    if (!kullanici) return res.status(404).json({ hata: "Bu bilgilere sahip bir Nexus ajanı bulunamadı." });
 
     // Şifreyi kontrol et
     const sifreDogruMu = await bcrypt.compare(sifre, kullanici.sifre);
