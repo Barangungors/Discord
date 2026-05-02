@@ -3,7 +3,8 @@ import io from 'socket.io-client';
 import './App.css';
 
 // DİKKAT: Ngrok adımında buradaki 'http://localhost:3001' adresini değiştireceğiz!
-const socket = io('http://localhost:3001'); 
+const socket = io('https://discord-iifa.onrender.com');
+
 
 const METIN_KANALLARI = ['genel-sohbet', 'yazilim', 'oyun-odasi', 'muzik'];
 const SES_KANALLARI = ['Lobi', 'Oyun Ses', 'Sohbet Odası'];
