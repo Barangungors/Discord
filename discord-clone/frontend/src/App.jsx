@@ -3,8 +3,8 @@ import io from 'socket.io-client';
 import './App.css';
 
 // DİKKAT: Ngrok adımında buradaki 'http://localhost:3001' adresini değiştireceğiz!
+// Önceki hali: const socket = io('https://...ngrok.dev');
 const socket = io('https://discord-iifa.onrender.com');
-
 
 const METIN_KANALLARI = ['genel-sohbet', 'yazilim', 'oyun-odasi', 'muzik'];
 const SES_KANALLARI = ['Lobi', 'Oyun Ses', 'Sohbet Odası'];
@@ -26,7 +26,7 @@ function App() {
   // --- SESLİ KANAL VE WEBRTC STATE'LERİ ---
   const [aktifSesKanalı, setAktifSesKanali] = useState(null);
   const [mikrofonAcik, setMikrofonAcik] = useState(false);
-  const [uzakSesler, setUzakSesler] = useState([]); // Karşıdan gelen ses objeleri
+  const [uzakSesler, setUzakSesler] = useState([]); // Karşıdan gelen ses objeleri (Stream'ler)
   const medyaAkisiRef = useRef(null);
   const peerBaglantilari = useRef({}); // Kiminle tünelimiz var
   const mesajlarSonuRef = useRef(null);
@@ -68,12 +68,15 @@ function App() {
         medyaAkisiRef.current.getTracks().forEach(track => peer.addTrack(track, medyaAkisiRef.current));
       }
 
-      // Karşıdan ses paketi geldiğinde
+      // Karşıdan ses paketi geldiğinde (GÜNCELLENDİ)
       peer.ontrack = (event) => {
-        const yeniSesObjesi = new Audio();
-        yeniSesObjesi.srcObject = event.streams[0];
-        yeniSesObjesi.autoplay = true; // Sesi anında oynat
-        setUzakSesler(eski => [...eski, yeniSesObjesi]);
+        setUzakSesler((eski) => {
+          // Aynı stream'in tekrar eklenmesini önle
+          if (!eski.includes(event.streams[0])) {
+            return [...eski, event.streams[0]];
+          }
+          return eski;
+        });
       };
 
       // Bağlantı yolu bulunduğunda (ICE) karşıya ilet
@@ -344,6 +347,23 @@ function App() {
           ))}
         </div>
       </div>
+
+      {/* UZAK SESLERİ OYNATMA ALANI (Görünmez) - EKLENDİ */}
+      <div style={{ display: 'none' }}>
+        {uzakSesler.map((stream, index) => (
+          <audio
+            key={index}
+            autoPlay
+            ref={(audioElement) => {
+              // DOM'a eklendiğinde sesi bağla
+              if (audioElement && audioElement.srcObject !== stream) {
+                audioElement.srcObject = stream;
+              }
+            }}
+          />
+        ))}
+      </div>
+
     </div>
   );
 }
