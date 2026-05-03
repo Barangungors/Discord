@@ -545,3 +545,57 @@ input:focus {
 
 .animate-fade-in { animation: floatIn 0.5s ease forwards; }
 .animate-slide-in { animation: floatIn 0.3s ease forwards; }
+
+
+/* --- YENİ EKLENEN ODA VE SES STİLLERİ --- */
+
+/* Kanal Altındaki Avatarlar (Nested) */
+.nested-avatars {
+  padding-left: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+  margin-bottom: 5px;
+}
+
+.nested-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #adb5bd;
+}
+
+.nested-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all 0.1s ease;
+}
+
+/* Konuşma Efekti (Yeşil Parlama) */
+.speaking {
+  border-color: #00ff88 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.8), inset 0 0 5px rgba(0, 255, 136, 0.5) !important;
+  animation: pop 0.2s ease-in-out;
+}
+
+.speaking-pulse {
+  background-color: #00ff88;
+  box-shadow: 0 0 15px #00ff88;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Sesli Kanal Aktif Renk */
+.voice-active {
+  background: rgba(0, 255, 136, 0.15) !important;
+  color: #00ff88 !important;
+  border-left: 3px solid #00ff88 !important;
+}
