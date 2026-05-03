@@ -8,7 +8,6 @@ const socket = io(backendURL);
 const METIN_KANALLARI = ['genel-sohbet', 'yazilim', 'oyun-odasi', 'muzik'];
 const SABIT_SES_KANALLARI = ['Lobi', 'Oyun Ses', 'Sohbet Odası'];
 
-// Ses Efektleri
 const SES_BAGLANDI = new Audio('https://actions.google.com/sounds/v1/ui/communication_channel_open.ogg');
 const SES_AYRILDI = new Audio('https://actions.google.com/sounds/v1/ui/communication_channel_close.ogg');
 SES_BAGLANDI.volume = 0.5; SES_AYRILDI.volume = 0.5;
@@ -31,15 +30,16 @@ function App() {
   const [mesajListesi, setMesajListesi] = useState([]);
   const [kanaldakiKullanicilar, setKanaldakiKullanicilar] = useState([]);
   
-  // --- YENİ ODA VE SES STATE'LERİ ---
   const [aktifSesKanalı, setAktifSesKanali] = useState(null);
   const [mikrofonAcik, setMikrofonAcik] = useState(false);
   const [uzakSesler, setUzakSesler] = useState([]); 
-  const [sestekiKullanicilar, setSestekiKullanicilar] = useState([]); // Kanalların altında görünenler
-  const [konusanlar, setKonusanlar] = useState([]); // Kimin etrafı yeşil yanacak
+  const [sestekiKullanicilar, setSestekiKullanicilar] = useState([]); 
+  const [konusanlar, setKonusanlar] = useState([]); 
   const [ozelOdalar, setOzelOdalar] = useState([]);
   
-  // Modal State'leri
+  // YENİ: Medya yükleme animasyonu için
+  const [medyaYukleniyor, setMedyaYukleniyor] = useState(false);
+
   const [odaKurModaliAcik, setOdaKurModaliAcik] = useState(false);
   const [yeniOdaIsmi, setYeniOdaIsmi] = useState('');
   const [yeniOdaTipi, setYeniOdaTipi] = useState('public');
@@ -49,10 +49,9 @@ function App() {
 
   const medyaAkisiRef = useRef(null);
   const peerBaglantilari = useRef({}); 
-  const sesFrekansDurdurucular = useRef({}); // Konuşma sensörlerini kapatmak için
+  const sesFrekansDurdurucular = useRef({}); 
   const mesajlarSonuRef = useRef(null);
 
-  // --- SES SEVİYESİ ALGILAYICI (GREEN GLOW) ---
   const sesSeviyesiDinle = (stream, userId) => {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -92,7 +91,6 @@ function App() {
     } catch (err) { console.log("Ses sensörü hatası", err); }
   };
 
-  // --- API İSTEKLERİ ---
   const odalariGetir = async () => {
     try {
       const res = await fetch(`${backendURL}/api/odalar`);
@@ -149,12 +147,11 @@ function App() {
       });
       if (res.ok) {
         setGirisSifreModali({ acik: false, odaIsmi: '' }); setGirilenOdaSifresi('');
-        sesliKanalaBaglanIcraat(girisSifreModali.odaIsmi); // Şifre doğruysa gir
+        sesliKanalaBaglanIcraat(girisSifreModali.odaIsmi); 
       } else alert((await res.json()).hata);
     } catch (err) { alert("Hata oluştu."); }
   };
 
-  // --- SOKET DİNLEYİCİLERİ ---
   useEffect(() => {
     if (girisYapildi) {
       socket.emit('kanala_katil', { kanalAdi: aktifKanal, kullaniciBilgisi: { kullaniciAdi, durum: kullaniciDurumu, renk: avatarRenk } });
@@ -174,7 +171,6 @@ function App() {
     };
   }, []);
 
-  // WEBRTC VE SES
   useEffect(() => {
     if(!aktifSesKanalı) return;
     const peerOlustur = (hedefID, arayanBenMiyim) => {
@@ -183,7 +179,7 @@ function App() {
 
       peer.ontrack = (event) => {
         setUzakSesler((eski) => { if (!eski.includes(event.streams[0])) return [...eski, event.streams[0]]; return eski; });
-        sesSeviyesiDinle(event.streams[0], hedefID); // Karşı tarafın konuşma sensörü
+        sesSeviyesiDinle(event.streams[0], hedefID); 
       };
       peer.onicecandidate = (event) => { if (event.candidate) socket.emit('ice_adayi', { hedef: hedefID, aday: event.candidate }); };
       return peer;
@@ -232,30 +228,25 @@ function App() {
 
   useEffect(() => { mesajlarSonuRef.current?.scrollIntoView({ behavior: "smooth" }); }, [mesajListesi]);
 
-  // --- TIKLAMA YÖNETİCİLERİ ---
   const sesliKanalaTikla = (kanalIsmi, kanalTipi = 'public') => {
-    if (aktifSesKanalı === kanalIsmi) return; // Zaten o odadaysan işlem yapma
+    if (aktifSesKanalı === kanalIsmi) return; 
     if (kanalTipi === 'private') {
-      setGirisSifreModali({ acik: true, odaIsmi: kanalIsmi }); // Şifre sor
+      setGirisSifreModali({ acik: true, odaIsmi: kanalIsmi }); 
     } else {
-      sesliKanalaBaglanIcraat(kanalIsmi); // Direkt gir
+      sesliKanalaBaglanIcraat(kanalIsmi); 
     }
   };
 
   const sesliKanalaBaglanIcraat = async (kanal) => {
     try {
-      if (aktifSesKanalı) sesliKanaldanAyril(); // Başka odadaysa önce çıkış yap
-      
+      if (aktifSesKanalı) sesliKanaldanAyril(); 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       medyaAkisiRef.current = stream;
       setAktifSesKanali(kanal);
       setMikrofonAcik(true);
-      
-      // Kendi mikrofonumuza sensör bağlıyoruz (Yeşil ışık yansın diye)
       sesSeviyesiDinle(stream, socket.id);
-
       socket.emit('sesli_kanala_katil', { kanalAdi: kanal, kullaniciBilgisi: { kullaniciAdi, renk: avatarRenk } });
-      SES_BAGLANDI.play(); // BAĞLANMA SESİ ÇAL
+      SES_BAGLANDI.play(); 
     } catch (err) { alert("Mikrofon izni verilmedi!"); }
   };
 
@@ -263,12 +254,11 @@ function App() {
     if (medyaAkisiRef.current) { medyaAkisiRef.current.getTracks().forEach(track => track.stop()); medyaAkisiRef.current = null; }
     Object.values(peerBaglantilari.current).forEach(peer => peer.close());
     Object.values(sesFrekansDurdurucular.current).forEach(durdur => durdur());
-    
     peerBaglantilari.current = {}; sesFrekansDurdurucular.current = {};
     setUzakSesler([]); setKonusanlar([]);
     socket.emit('sesli_kanaldan_ayril', aktifSesKanalı);
     setAktifSesKanali(null); setMikrofonAcik(false);
-    SES_AYRILDI.play(); // AYRILMA SESİ ÇAL
+    SES_AYRILDI.play(); 
   };
 
   const mikrofonuGecisYap = () => {
@@ -281,8 +271,53 @@ function App() {
 
   const mesajGonder = () => {
     if (mesaj.trim() !== '') {
-      socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: mesaj, saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk });
+      socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: mesaj, dosyaTipi: 'text', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk });
       setMesaj('');
+    }
+  };
+
+  // --- YENİ: MEDYA (FOTOĞRAF/VİDEO) YÜKLEME FONKSİYONU ---
+  const medyaYukle = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert("NEXUS sistemi maksimum 15MB boyutundaki medyaları destekler.");
+      e.target.value = '';
+      return;
+    }
+
+    setMedyaYukleniyor(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'no0ddvg5'); // Senin Cloudinary Preset'in
+    formData.append('cloud_name', 'dmdzi2mtx');   // Senin Cloudinary Adın
+
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dmdzi2mtx/auto/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      
+      if (data.secure_url) {
+        socket.emit('mesaj_gonder', {
+          id: socket.id,
+          kullaniciAdi,
+          metin: data.secure_url,
+          dosyaTipi: data.resource_type, // 'image' veya 'video'
+          saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          kanal: aktifKanal,
+          renk: avatarRenk
+        });
+      } else {
+        alert("Bağlantı şifrelenemedi, yükleme başarısız.");
+      }
+    } catch (err) {
+      alert("Ağ hatası oluştu.");
+    } finally {
+      setMedyaYukleniyor(false);
+      e.target.value = ''; // Aynı dosyayı tekrar seçebilmek için sıfırla
     }
   };
 
@@ -322,7 +357,6 @@ function App() {
     );
   }
 
-  // Odaların altına o odadaki kişilerin avatarlarını çizen bileşen
   const OdaIciAvatarlar = ({ kanalAdi }) => {
     const oOdakiler = sestekiKullanicilar.filter(k => k.kanal === kanalAdi);
     if (oOdakiler.length === 0) return null;
@@ -340,7 +374,6 @@ function App() {
 
   return (
     <div className="discord-layout">
-      {/* Şifreli Odaya Giriş Modali */}
       {girisSifreModali.acik && (
         <div className="settings-overlay">
           <div className="settings-modal glass-panel">
@@ -358,7 +391,6 @@ function App() {
         </div>
       )}
 
-      {/* Oda Oluştur Modali */}
       {odaKurModaliAcik && (
         <div className="settings-overlay">
           <div className="settings-modal glass-panel">
@@ -499,7 +531,16 @@ function App() {
                     <span className="message-username" style={{ color: m.renk, textShadow: `0 0 5px ${m.renk}88` }}>{m.kullaniciAdi}</span>
                     <span className="message-time">{m.saat}</span>
                   </div>
-                  <div className="message-text">{m.metin}</div>
+                  {/* YENİ: Fotoğraf ve Video Yansıtma Bölümü */}
+                  <div className="message-text">
+                    {m.dosyaTipi === 'image' ? (
+                      <img src={m.metin} alt="Gönderilen Görsel" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '10px', border: '2px solid', borderColor: m.renk, marginTop: '8px', boxShadow: `0 0 10px ${m.renk}40` }} />
+                    ) : m.dosyaTipi === 'video' ? (
+                      <video src={m.metin} controls style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '10px', border: '2px solid', borderColor: m.renk, marginTop: '8px', boxShadow: `0 0 10px ${m.renk}40` }} />
+                    ) : (
+                      m.metin
+                    )}
+                  </div>
                 </div>
               </div>
             ))
@@ -507,8 +548,31 @@ function App() {
           <div ref={mesajlarSonuRef} />
         </div>
         <div className="message-input-area">
-          <div className="input-wrapper glass-input">
-            <input type="text" value={mesaj} onChange={(e) => setMesaj(e.target.value)} placeholder={`#${aktifKanal} ağına veri gönder...`} onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} autoFocus />
+          {/* YENİ: Mesaj kutusu ve Medya Yükleme Butonu */}
+          <div className="input-wrapper glass-input" style={{ display: 'flex', alignItems: 'center', padding: '5px 15px', gap: '15px' }}>
+            
+            <input 
+              type="file" 
+              id="medya-secici" 
+              style={{ display: 'none' }} 
+              accept="image/*,video/*"
+              onChange={medyaYukle}
+              disabled={medyaYukleniyor}
+            />
+            <label htmlFor="medya-secici" style={{ cursor: medyaYukleniyor ? 'wait' : 'pointer', fontSize: '26px', color: medyaYukleniyor ? '#8b9bb4' : '#00f3ff', transition: '0.2s' }} title="Fotoğraf veya Video Ekle">
+              {medyaYukleniyor ? '⏳' : '⊕'}
+            </label>
+
+            <input 
+              type="text" 
+              value={mesaj} 
+              onChange={(e) => setMesaj(e.target.value)} 
+              placeholder={medyaYukleniyor ? "Medya sunucuya aktarılıyor..." : `#${aktifKanal} ağına veri gönder...`} 
+              onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} 
+              autoFocus 
+              disabled={medyaYukleniyor}
+              style={{ flex: 1, padding: '10px 0' }}
+            />
           </div>
         </div>
       </div>
