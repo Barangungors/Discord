@@ -37,8 +37,12 @@ function App() {
   const [konusanlar, setKonusanlar] = useState([]); 
   const [ozelOdalar, setOzelOdalar] = useState([]);
   
-  // YENİ: Medya yükleme animasyonu için
   const [medyaYukleniyor, setMedyaYukleniyor] = useState(false);
+
+  // --- YENİ: EKRAN PAYLAŞIMI STATE'LERİ ---
+  const [ekranPaylasiliyor, setEkranPaylasiliyor] = useState(false);
+  const [yerelEkranAkim, setYerelEkranAkim] = useState(null);
+  const ekranAkisiRef = useRef(null);
 
   const [odaKurModaliAcik, setOdaKurModaliAcik] = useState(false);
   const [yeniOdaIsmi, setYeniOdaIsmi] = useState('');
@@ -171,43 +175,77 @@ function App() {
     };
   }, []);
 
+  // --- WEBRTC GÜNCELLEMESİ (Ekran Paylaşımı Destekli) ---
   useEffect(() => {
     if(!aktifSesKanalı) return;
+
     const peerOlustur = (hedefID, arayanBenMiyim) => {
       const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      
+      // Mikrofon Sesini Ekle
       if(medyaAkisiRef.current) medyaAkisiRef.current.getTracks().forEach(track => peer.addTrack(track, medyaAkisiRef.current));
+      
+      // Eğer ekran paylaşıyorsak onu da ekle
+      if(ekranAkisiRef.current) ekranAkisiRef.current.getTracks().forEach(track => peer.addTrack(track, ekranAkisiRef.current));
 
       peer.ontrack = (event) => {
-        setUzakSesler((eski) => { if (!eski.includes(event.streams[0])) return [...eski, event.streams[0]]; return eski; });
+        setUzakSesler((eski) => {
+          if (!eski.find(s => s.id === event.streams[0].id)) return [...eski, event.streams[0]];
+          return eski;
+        });
         sesSeviyesiDinle(event.streams[0], hedefID); 
       };
+
       peer.onicecandidate = (event) => { if (event.candidate) socket.emit('ice_adayi', { hedef: hedefID, aday: event.candidate }); };
+      
+      // Ekran gibi yeni veri eklendiğinde teklif yenileme (Renegotiation)
+      peer.onnegotiationneeded = async () => {
+        try {
+          const teklif = await peer.createOffer();
+          await peer.setLocalDescription(teklif);
+          socket.emit('ses_teklifi', { hedef: hedefID, sdp: peer.localDescription });
+        } catch (err) { console.error("Negotiation Hatası:", err); }
+      };
+
       return peer;
     };
 
     socket.on('yeni_kullanici_ses_kanalinda', async (yeniKullaniciID) => {
       const peer = peerOlustur(yeniKullaniciID, true);
       peerBaglantilari.current[yeniKullaniciID] = peer;
-      const teklif = await peer.createOffer();
-      await peer.setLocalDescription(teklif);
-      socket.emit('ses_teklifi', { hedef: yeniKullaniciID, sdp: teklif });
     });
 
     socket.on('ses_teklifi', async (data) => {
-      const peer = peerOlustur(data.gonderen, false);
-      peerBaglantilari.current[data.gonderen] = peer;
-      await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      const cevap = await peer.createAnswer();
-      await peer.setLocalDescription(cevap);
-      socket.emit('ses_cevabi', { hedef: data.gonderen, sdp: cevap });
+      let peer = peerBaglantilari.current[data.gonderen];
+      if (!peer) {
+        peer = peerOlustur(data.gonderen, false);
+        peerBaglantilari.current[data.gonderen] = peer;
+      }
+      try {
+        await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        const cevap = await peer.createAnswer();
+        await peer.setLocalDescription(cevap);
+        socket.emit('ses_cevabi', { hedef: data.gonderen, sdp: cevap });
+      } catch (e) { console.log("Teklif Onay Hatası", e); }
     });
 
-    socket.on('ses_cevabi', async (data) => { if(peerBaglantilari.current[data.gonderen]) await peerBaglantilari.current[data.gonderen].setRemoteDescription(new RTCSessionDescription(data.sdp)); });
+    socket.on('ses_cevabi', async (data) => { 
+      try {
+        const peer = peerBaglantilari.current[data.gonderen];
+        if(peer && peer.signalingState !== 'stable') {
+          await peer.setRemoteDescription(new RTCSessionDescription(data.sdp)); 
+        }
+      } catch(e) {}
+    });
+
     socket.on('ice_adayi', async (data) => { if (peerBaglantilari.current[data.gonderen]) await peerBaglantilari.current[data.gonderen].addIceCandidate(new RTCIceCandidate(data.aday)); });
+    
     socket.on('kullanici_sesten_ayrildi', (id) => {
       if(peerBaglantilari.current[id]) { peerBaglantilari.current[id].close(); delete peerBaglantilari.current[id]; }
       if(sesFrekansDurdurucular.current[id]) { sesFrekansDurdurucular.current[id](); delete sesFrekansDurdurucular.current[id]; }
       setKonusanlar(prev => prev.filter(kId => kId !== id));
+      // Giden kullanıcının ekran akışını da temizle
+      setUzakSesler(eski => eski.filter(s => s.active));
     });
 
     return () => {
@@ -252,6 +290,7 @@ function App() {
 
   const sesliKanaldanAyril = () => {
     if (medyaAkisiRef.current) { medyaAkisiRef.current.getTracks().forEach(track => track.stop()); medyaAkisiRef.current = null; }
+    if (ekranAkisiRef.current) { ekranAkisiRef.current.getTracks().forEach(track => track.stop()); ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); }
     Object.values(peerBaglantilari.current).forEach(peer => peer.close());
     Object.values(sesFrekansDurdurucular.current).forEach(durdur => durdur());
     peerBaglantilari.current = {}; sesFrekansDurdurucular.current = {};
@@ -269,6 +308,48 @@ function App() {
     }
   };
 
+  // --- YENİ: EKRAN PAYLAŞMA / DURDURMA FONKSİYONU ---
+  const ekranPaylasiminiDegistir = async () => {
+    if (ekranPaylasiliyor) {
+      // Paylaşımı Kapat
+      if (ekranAkisiRef.current) {
+        ekranAkisiRef.current.getTracks().forEach(t => t.stop());
+        Object.values(peerBaglantilari.current).forEach(peer => {
+          const senders = peer.getSenders().filter(s => s.track && s.track.kind === 'video');
+          senders.forEach(s => peer.removeTrack(s));
+        });
+      }
+      ekranAkisiRef.current = null;
+      setYerelEkranAkim(null);
+      setEkranPaylasiliyor(false);
+    } else {
+      // Paylaşımı Aç
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        ekranAkisiRef.current = stream;
+        setYerelEkranAkim(stream);
+        setEkranPaylasiliyor(true);
+
+        stream.getTracks().forEach(track => {
+          Object.values(peerBaglantilari.current).forEach(peer => {
+            peer.addTrack(track, stream);
+          });
+          
+          // Tarayıcının kendi "Paylaşımı Durdur" butonuna basılırsa
+          track.onended = () => {
+             ekranAkisiRef.current = null;
+             setYerelEkranAkim(null);
+             setEkranPaylasiliyor(false);
+             Object.values(peerBaglantilari.current).forEach(peer => {
+               const senders = peer.getSenders().filter(s => s.track && s.track.kind === 'video');
+               senders.forEach(s => peer.removeTrack(s));
+             });
+          };
+        });
+      } catch(err) { console.log("Ekran Paylaşım Hatası:", err); }
+    }
+  };
+
   const mesajGonder = () => {
     if (mesaj.trim() !== '') {
       socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: mesaj, dosyaTipi: 'text', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk });
@@ -276,58 +357,34 @@ function App() {
     }
   };
 
-  // --- YENİ: MEDYA (FOTOĞRAF/VİDEO) YÜKLEME FONKSİYONU ---
   const medyaYukle = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 15 * 1024 * 1024) {
-      alert("NEXUS sistemi maksimum 15MB boyutundaki medyaları destekler.");
-      e.target.value = '';
-      return;
-    }
+    if (file.size > 15 * 1024 * 1024) { alert("NEXUS sistemi maksimum 15MB destekler."); e.target.value = ''; return; }
 
     setMedyaYukleniyor(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'no0ddvg5'); // Senin Cloudinary Preset'in
-    formData.append('cloud_name', 'dmdzi2mtx');   // Senin Cloudinary Adın
+    formData.append('upload_preset', 'no0ddvg5'); 
+    formData.append('cloud_name', 'dmdzi2mtx');   
 
     try {
-      const res = await fetch('https://api.cloudinary.com/v1_1/dmdzi2mtx/auto/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      const res = await fetch('https://api.cloudinary.com/v1_1/dmdzi2mtx/auto/upload', { method: 'POST', body: formData });
       const data = await res.json();
       
       if (data.secure_url) {
-        socket.emit('mesaj_gonder', {
-          id: socket.id,
-          kullaniciAdi,
-          metin: data.secure_url,
-          dosyaTipi: data.resource_type, // 'image' veya 'video'
-          saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          kanal: aktifKanal,
-          renk: avatarRenk
-        });
-      } else {
-        alert("Bağlantı şifrelenemedi, yükleme başarısız.");
-      }
-    } catch (err) {
-      alert("Ağ hatası oluştu.");
-    } finally {
-      setMedyaYukleniyor(false);
-      e.target.value = ''; // Aynı dosyayı tekrar seçebilmek için sıfırla
-    }
+        socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: data.secure_url, dosyaTipi: data.resource_type, saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk });
+      } else { alert("Bağlantı şifrelenemedi, yükleme başarısız."); }
+    } catch (err) { alert("Ağ hatası oluştu."); } 
+    finally { setMedyaYukleniyor(false); e.target.value = ''; }
   };
 
   const durumRengiGetir = (durum) => {
     if(durum === 'Çevrimiçi') return '#00ff88'; if(durum === 'Boşta') return '#ffea00'; if(durum === 'Rahatsız Etmeyin') return '#ff0055'; return '#4a4d57';
   };
 
-  const grupluKullanicilar = {
-    'Çevrimiçi': kanaldakiKullanicilar.filter(k => k.durum === 'Çevrimiçi'), 'Boşta': kanaldakiKullanicilar.filter(k => k.durum === 'Boşta'), 'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin'),
-  };
+  const grupluKullanicilar = { 'Çevrimiçi': kanaldakiKullanicilar.filter(k => k.durum === 'Çevrimiçi'), 'Boşta': kanaldakiKullanicilar.filter(k => k.durum === 'Boşta'), 'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin') };
 
   if (!girisYapildi) {
     return (
@@ -371,6 +428,10 @@ function App() {
       </div>
     );
   };
+
+  // Video yayını yapan akışları filtrele
+  const aktifEkranYayinlari = uzakSesler.filter(s => s.active && s.getVideoTracks().length > 0);
+  const yayinEkraniAcik = yerelEkranAkim || aktifEkranYayinlari.length > 0;
 
   return (
     <div className="discord-layout">
@@ -481,7 +542,6 @@ function App() {
               <OdaIciAvatarlar kanalAdi={oda.isim} />
             </div>
           ))}
-
         </div>
 
         {aktifSesKanalı && (
@@ -492,9 +552,13 @@ function App() {
             </div>
             <div className="voice-actions">
               <button className={`mic-btn ${!mikrofonAcik ? 'muted' : ''}`} onClick={mikrofonuGecisYap}>
-                {mikrofonAcik ? '🎙️ Açık' : '🔇 Kapalı'}
+                {mikrofonAcik ? '🎙️' : '🔇'}
               </button>
-              <button className="disconnect-btn" onClick={sesliKanaldanAyril}>❌ Çık</button>
+              {/* YENİ EKLENEN EKRAN PAYLAŞ BUTONU */}
+              <button className={`mic-btn share-btn ${ekranPaylasiliyor ? 'active-share' : ''}`} onClick={ekranPaylasiminiDegistir}>
+                {ekranPaylasiliyor ? '💻 Yayını Kapat' : '🖥️ Ekran Paylaş'}
+              </button>
+              <button className="disconnect-btn" onClick={sesliKanaldanAyril}>❌</button>
             </div>
           </div>
         )}
@@ -516,7 +580,26 @@ function App() {
         <div className="chat-header">
           <span className="hash">#</span><h3>{aktifKanal}</h3>
         </div>
-        <div className="messages-container">
+        
+        {/* YENİ: EKRAN PAYLAŞIMI CANLI YAYIN ALANI */}
+        {yayinEkraniAcik && (
+          <div className="screenshare-grid animate-slide-in">
+            {yerelEkranAkim && (
+              <div className="video-card">
+                 <video autoPlay muted ref={el => {if(el) el.srcObject = yerelEkranAkim}} />
+                 <span className="video-label" style={{color: avatarRenk}}>● Sen (Canlı)</span>
+              </div>
+            )}
+            {aktifEkranYayinlari.map((s, i) => (
+              <div key={i} className="video-card">
+                 <video autoPlay ref={el => {if(el && el.srcObject !== s) el.srcObject = s}} />
+                 <span className="video-label" style={{color: '#ff0055'}}>● Yayın İzleniyor</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="messages-container" style={{ height: yayinEkraniAcik ? '50%' : '100%' }}>
           {mesajListesi.length === 0 ? (
             <div className="empty-chat animate-fade-in">
               <h3 style={{textShadow: `0 0 10px ${avatarRenk}`}}>#{aktifKanal} ağına bağlandın.</h3>
@@ -531,7 +614,6 @@ function App() {
                     <span className="message-username" style={{ color: m.renk, textShadow: `0 0 5px ${m.renk}88` }}>{m.kullaniciAdi}</span>
                     <span className="message-time">{m.saat}</span>
                   </div>
-                  {/* YENİ: Fotoğraf ve Video Yansıtma Bölümü */}
                   <div className="message-text">
                     {m.dosyaTipi === 'image' ? (
                       <img src={m.metin} alt="Gönderilen Görsel" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '10px', border: '2px solid', borderColor: m.renk, marginTop: '8px', boxShadow: `0 0 10px ${m.renk}40` }} />
@@ -548,31 +630,12 @@ function App() {
           <div ref={mesajlarSonuRef} />
         </div>
         <div className="message-input-area">
-          {/* YENİ: Mesaj kutusu ve Medya Yükleme Butonu */}
           <div className="input-wrapper glass-input" style={{ display: 'flex', alignItems: 'center', padding: '5px 15px', gap: '15px' }}>
-            
-            <input 
-              type="file" 
-              id="medya-secici" 
-              style={{ display: 'none' }} 
-              accept="image/*,video/*"
-              onChange={medyaYukle}
-              disabled={medyaYukleniyor}
-            />
+            <input type="file" id="medya-secici" style={{ display: 'none' }} accept="image/*,video/*" onChange={medyaYukle} disabled={medyaYukleniyor} />
             <label htmlFor="medya-secici" style={{ cursor: medyaYukleniyor ? 'wait' : 'pointer', fontSize: '26px', color: medyaYukleniyor ? '#8b9bb4' : '#00f3ff', transition: '0.2s' }} title="Fotoğraf veya Video Ekle">
               {medyaYukleniyor ? '⏳' : '⊕'}
             </label>
-
-            <input 
-              type="text" 
-              value={mesaj} 
-              onChange={(e) => setMesaj(e.target.value)} 
-              placeholder={medyaYukleniyor ? "Medya sunucuya aktarılıyor..." : `#${aktifKanal} ağına veri gönder...`} 
-              onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} 
-              autoFocus 
-              disabled={medyaYukleniyor}
-              style={{ flex: 1, padding: '10px 0' }}
-            />
+            <input type="text" value={mesaj} onChange={(e) => setMesaj(e.target.value)} placeholder={medyaYukleniyor ? "Medya sunucuya aktarılıyor..." : `#${aktifKanal} ağına veri gönder...`} onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} autoFocus disabled={medyaYukleniyor} style={{ flex: 1, padding: '10px 0' }} />
           </div>
         </div>
       </div>
@@ -602,7 +665,7 @@ function App() {
       </div>
 
       <div style={{ display: 'none' }}>
-        {uzakSesler.map((stream, index) => (
+        {uzakSesler.filter(s => s.getVideoTracks().length === 0).map((stream, index) => (
           <audio key={index} autoPlay ref={(el) => { if (el && el.srcObject !== stream) el.srcObject = stream; }} />
         ))}
       </div>
