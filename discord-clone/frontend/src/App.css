@@ -185,3 +185,106 @@ body {
 .nested-user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
 .nested-avatar { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; }
 .speaking-discord { border-color: #23a559 !important; box-shadow: 0 0 0 2px rgba(35, 165, 89, 0.3) !important; }
+/* --- YENİ: MESAJ YANITLAMA (REPLY) STİLLERİ --- */
+
+.message-discord {
+  /* Eğik çizgi referansı için position ayarını garantile */
+  position: relative;
+}
+
+.replied-message-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  margin-top: -4px;
+  position: relative;
+  user-select: none;
+  cursor: pointer;
+}
+
+.replied-message-wrapper:hover {
+  color: var(--text-normal);
+}
+
+/* O Meşhur Eğimli Çizgi (Discord Reply Spine) */
+.reply-spine {
+  position: absolute;
+  left: -32px;
+  top: 50%;
+  width: 28px;
+  height: 12px;
+  border-left: 2px solid #4f545c;
+  border-top: 2px solid #4f545c;
+  border-top-left-radius: 6px;
+}
+
+.replied-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.replied-username {
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.replied-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+/* Yanıt Yazma (Input) Bildirimi */
+.reply-banner {
+  background-color: var(--bg-secondary);
+  padding: 8px 16px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.reply-active {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+.cancel-reply {
+  cursor: pointer;
+  color: var(--header-secondary);
+  font-size: 10px;
+}
+.cancel-reply:hover { color: var(--danger); }
+
+
+/* --- YENİ: MARKDOWN (METİN FORMATLAMA) STİLLERİ --- */
+.inline-code {
+  background-color: #1e1f22;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+}
+
+.mention {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+  padding: 0 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.1s;
+}
+
+.mention:hover {
+  background-color: var(--brand-color);
+  color: white;
+}
