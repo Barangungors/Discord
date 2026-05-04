@@ -667,3 +667,52 @@ input:focus {
   border: 1px solid #ff0055;
   box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
 }
+/* --- SOSYAL GÜNCELLEME STİLLERİ --- */
+
+/* Mesaj Silme İkonu */
+.delete-msg-btn {
+  cursor: pointer;
+  opacity: 0.2;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.message:hover .delete-msg-btn {
+  opacity: 1;
+}
+.delete-msg-btn:hover {
+  transform: scale(1.2) rotate(10deg);
+  filter: drop-shadow(0 0 5px #ff0055);
+}
+
+/* Yazıyor... Animasyonu (Typing Indicator) */
+.typing-indicator {
+  position: absolute;
+  top: -22px;
+  left: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 3px;
+}
+.typing-dots span {
+  width: 5px;
+  height: 5px;
+  background-color: var(--text-muted);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
