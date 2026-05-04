@@ -31,6 +31,9 @@ function App() {
   const [mesajListesi, setMesajListesi] = useState([]);
   const [kanaldakiKullanicilar, setKanaldakiKullanicilar] = useState([]);
   
+  // YENİ: YANITLANAN MESAJ STATE'İ
+  const [yanitlananMesaj, setYanitlananMesaj] = useState(null);
+
   const [yazanKullanicilar, setYazanKullanicilar] = useState([]);
   const yazmaZamanlayici = useRef(null);
 
@@ -126,7 +129,7 @@ function App() {
   useEffect(() => {
     if (girisYapildi) {
       socket.emit('kanala_katil', { kanalAdi: aktifKanal, kullaniciBilgisi: { kullaniciAdi, durum: kullaniciDurumu, renk: avatarRenk, avatarResmi } });
-      setMesajListesi([]); setYazanKullanicilar([]);
+      setMesajListesi([]); setYazanKullanicilar([]); setYanitlananMesaj(null); // Kanal değişince yanıtı iptal et
     }
   }, [aktifKanal, girisYapildi, kullaniciDurumu, avatarRenk, avatarResmi]);
 
@@ -249,14 +252,27 @@ function App() {
     yazmaZamanlayici.current = setTimeout(() => { socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); }, 1500);
   };
 
+  // YENİ: Yanıtlanan mesajla birlikte gönderme
   const mesajGonder = () => {
     if (mesaj.trim() !== '') {
-      socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: mesaj, dosyaTipi: 'text', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi });
+      socket.emit('mesaj_gonder', { 
+        id: socket.id, 
+        kullaniciAdi, 
+        metin: mesaj, 
+        dosyaTipi: 'text', 
+        saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
+        kanal: aktifKanal, 
+        renk: avatarRenk, 
+        avatarResmi,
+        yanitlanan: yanitlananMesaj // Yanıt objesini backend'e ekliyoruz
+      });
       setMesaj('');
+      setYanitlananMesaj(null); // Yanıtı sıfırla
       socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); 
     }
   };
 
+  // YENİ: Medya yüklerken de yanıtı gönder
   const medyaYukle = async (e, isAvatar = false) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -276,11 +292,28 @@ function App() {
           setAvatarResmi(data.secure_url);
           await fetch(`${backendURL}/api/avatar-guncelle`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, avatarResmi: data.secure_url }) });
         } else {
-          socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: data.secure_url, dosyaTipi: data.resource_type, saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi });
+          socket.emit('mesaj_gonder', { 
+            id: socket.id, kullaniciAdi, metin: data.secure_url, dosyaTipi: data.resource_type, 
+            saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, 
+            renk: avatarRenk, avatarResmi, yanitlanan: yanitlananMesaj 
+          });
+          setYanitlananMesaj(null);
         }
       }
     } catch (err) { alert("Yükleme hatası."); } 
     finally { setMedyaYukleniyor(false); e.target.value = ''; }
+  };
+
+  // YENİ: Discord Tarzı Metin Formatlama Fonksiyonu (Markdown)
+  const formatliMetin = (metin) => {
+    if (!metin) return null;
+    let islenmis = metin.replace(/</g, "&lt;").replace(/>/g, "&gt;"); // XSS Koruması
+    islenmis = islenmis.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Kalın
+    islenmis = islenmis.replace(/\*(.*?)\*/g, '<em>$1</em>'); // İtalik
+    islenmis = islenmis.replace(/__(.*?)__/g, '<u>$1</u>'); // Altı çizili
+    islenmis = islenmis.replace(/`(.*?)`/g, '<span class="inline-code">$1</span>'); // Kod bloğu
+    islenmis = islenmis.replace(/@(\S+)/g, '<span class="mention">@$1</span>'); // Kullanıcı etiketleme
+    return <span dangerouslySetInnerHTML={{ __html: islenmis }} />;
   };
 
   const durumRengiGetir = (durum) => { if(durum === 'Çevrimiçi') return '#23a559'; if(durum === 'Boşta') return '#f0b232'; if(durum === 'Rahatsız Etmeyin') return '#f23f43'; return '#80848e'; };
@@ -357,6 +390,7 @@ function App() {
 
   return (
     <div className="discord-layout main-theme">
+      {/* ... (Modallar Aynen Kalıyor) ... */}
       {girisSifreModali.acik && (
         <div className="discord-modal-overlay">
           <div className="discord-modal">
@@ -406,17 +440,14 @@ function App() {
         </div>
       )}
 
-      {/* EN SOL SUNUCU LİSTESİ */}
+      {/* SOL SUNUCU VE KANAL BARI */}
       <div className="server-sidebar-discord">
-        <div className="server-icon-discord active">
-           <img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg" alt="Discord" style={{width:'28px'}}/>
-        </div>
+        <div className="server-icon-discord active"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg" alt="Discord" style={{width:'28px'}}/></div>
         <div className="server-separator"></div>
         <div className="server-icon-discord server-custom" style={{backgroundColor: avatarRenk}}>NX</div>
         <div className="server-icon-discord add-server">+</div>
       </div>
 
-      {/* KANALLAR LİSTESİ */}
       <div className="channel-sidebar-discord">
         <div className="server-header-discord"><h3>Nexus Sunucusu</h3></div>
         <div className="channel-list-discord">
@@ -445,7 +476,6 @@ function App() {
           ))}
         </div>
 
-        {/* --- GÜNCELLENEN SES KONTROL PANELİ --- */}
         {aktifSesKanalı && (
           <div className="voice-control-panel-discord">
             <div className="voice-status-discord">
@@ -455,18 +485,10 @@ function App() {
               </div>
               <span style={{fontSize:'12px', color:'#b5bac1', marginLeft: '14px'}}>{aktifSesKanalı}</span>
             </div>
-            
-            {/* EKLENEN MİKROFON, EKRAN PAYLAŞIMI VE ÇIKIŞ BUTONLARI */}
             <div className="voice-actions-discord">
-              <button className={`action-icon-discord ${!mikrofonAcik ? 'muted' : ''}`} onClick={mikrofonuGecisYap} title={mikrofonAcik ? "Sesi Kapat" : "Sesi Aç"}>
-                {mikrofonAcik ? '🎙️' : '🔇'}
-              </button>
-              <button className={`action-icon-discord ${ekranPaylasiliyor ? 'active' : ''}`} onClick={ekranPaylasiminiDegistir} title={ekranPaylasiliyor ? "Ekran Paylaşımını Kapat" : "Ekran Paylaş"}>
-                🖥️
-              </button>
-              <button className="action-icon-discord disconnect" onClick={sesliKanaldanAyril} title="Bağlantıyı Kes">
-                📞
-              </button>
+              <button className={`action-icon-discord ${!mikrofonAcik ? 'muted' : ''}`} onClick={mikrofonuGecisYap} title={mikrofonAcik ? "Sesi Kapat" : "Sesi Aç"}>{mikrofonAcik ? '🎙️' : '🔇'}</button>
+              <button className={`action-icon-discord ${ekranPaylasiliyor ? 'active' : ''}`} onClick={ekranPaylasiminiDegistir} title={ekranPaylasiliyor ? "Ekranı Kapat" : "Ekran Paylaş"}>🖥️</button>
+              <button className="action-icon-discord disconnect" onClick={sesliKanaldanAyril} title="Bağlantıyı Kes">📞</button>
             </div>
           </div>
         )}
@@ -484,7 +506,7 @@ function App() {
         </div>
       </div>
 
-      {/* SOHBET ALANI */}
+      {/* --- ANA SOHBET ALANI --- */}
       <div className="chat-area-discord">
         <div className="chat-header-discord"><span className="hash-discord" style={{fontSize:'24px', marginRight:'10px'}}>#</span><h3>{aktifKanal}</h3></div>
         
@@ -508,11 +530,25 @@ function App() {
             </div>
           ) : (
             mesajListesi.map((m, index) => {
+              // YENİ: Yanıtlanan mesaj varsa gruplamayı kır!
               const oncekiMesaj = index > 0 ? mesajListesi[index - 1] : null;
-              const ayniKisi = oncekiMesaj && oncekiMesaj.kullaniciAdi === m.kullaniciAdi;
+              const ayniKisi = oncekiMesaj && oncekiMesaj.kullaniciAdi === m.kullaniciAdi && !m.yanitlanan;
 
               return (
-                <div key={index} className={`message-discord ${ayniKisi ? 'grouped' : ''}`}>
+                <div key={index} className={`message-discord ${ayniKisi ? 'grouped' : ''} ${yanitlananMesaj?.mesajId === m.mesajId ? 'highlight-reply' : ''}`}>
+                  
+                  {/* YENİ: Yanıtlanan Mesajın Görünümü */}
+                  {m.yanitlanan && (
+                    <div className="replied-message-wrapper">
+                      <div className="reply-spine"></div>
+                      <div className="replied-avatar" style={avatarStili(m.yanitlanan.renk, m.yanitlanan.avatarResmi)}></div>
+                      <span className="replied-username" style={{color: m.yanitlanan.renk}}>@{m.yanitlanan.kullaniciAdi}</span>
+                      <span className="replied-text">
+                        {m.yanitlanan.dosyaTipi === 'text' ? m.yanitlanan.metin : 'Görsel/Video gönderdi'}
+                      </span>
+                    </div>
+                  )}
+
                   {!ayniKisi && <div className="message-avatar-discord" style={avatarStili(m.renk, m.avatarResmi)}></div>}
                   
                   <div className="message-content-discord">
@@ -525,20 +561,23 @@ function App() {
                     
                     {ayniKisi && <div className="message-time-hover">{m.saat}</div>}
 
+                    {/* YENİ: Formatlı Metin Render'ı */}
                     <div className="message-text-discord">
                       {m.dosyaTipi === 'image' ? (
                         <img src={m.metin} alt="Görsel" className="chat-image" />
                       ) : m.dosyaTipi === 'video' ? (
                         <video src={m.metin} controls className="chat-video" />
-                      ) : ( m.metin )}
+                      ) : ( formatliMetin(m.metin) )}
                     </div>
                   </div>
                   
-                  {m.kullaniciAdi === kullaniciAdi && (
-                    <div className="message-actions-discord">
+                  {/* YENİ: Yanıtla ve Sil Butonları */}
+                  <div className="message-actions-discord">
+                     <span className="action-btn" onClick={() => setYanitlananMesaj(m)} title="Yanıtla">↩️</span>
+                     {m.kullaniciAdi === kullaniciAdi && (
                        <span className="action-btn" onClick={() => socket.emit('mesaj_sil', { kanal: aktifKanal, mesajId: m.mesajId })} title="Sil">🗑️</span>
-                    </div>
-                  )}
+                     )}
+                  </div>
                 </div>
               );
             })
@@ -554,7 +593,15 @@ function App() {
             </div>
           )}
 
-          <div className="input-wrapper-discord">
+          {/* YENİ: Yanıtlama Kutusu Üst Bildirimi */}
+          {yanitlananMesaj && (
+             <div className="reply-banner">
+                <span>Şu kişiye yanıt veriliyor: <strong>@{yanitlananMesaj.kullaniciAdi}</strong></span>
+                <span className="cancel-reply" onClick={() => setYanitlananMesaj(null)}>❌</span>
+             </div>
+          )}
+
+          <div className={`input-wrapper-discord ${yanitlananMesaj ? 'reply-active' : ''}`}>
             <input type="file" id="medya-secici" style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => medyaYukle(e, false)} disabled={medyaYukleniyor} />
             <label htmlFor="medya-secici" className="add-media-btn">
               {medyaYukleniyor ? '⏳' : '+'}
@@ -570,7 +617,7 @@ function App() {
         </div>
       </div>
 
-      {/* SAĞ ÜYELER LİSTESİ */}
+      {/* SAĞ ÜYELER */}
       <div className="members-sidebar-discord">
         <div className="members-list-content-discord">
           {['Çevrimiçi', 'Boşta', 'Rahatsız Etmeyin'].map((durum) => (
