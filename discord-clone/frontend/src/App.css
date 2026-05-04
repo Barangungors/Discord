@@ -1,718 +1,340 @@
-/* --- GOOGLE FONTLARI (Fütüristik ve Modern) --- */
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap');
 
-/* --- TEMEL DEĞİŞKENLER --- */
 :root {
-  --bg-dark: #07090f;
-  --bg-panel: rgba(15, 20, 30, 0.6);
-  --bg-panel-hover: rgba(25, 35, 55, 0.8);
-  --border-neon: rgba(0, 243, 255, 0.3);
-  --text-main: #e0e6ed;
-  --text-muted: #8b9bb4;
-  --cyan-glow: #00f3ff;
-  --glass-blur: blur(12px);
+  --bg-primary: #313338;
+  --bg-secondary: #2b2d31;
+  --bg-tertiary: #1e1f22;
+  --bg-floating: #111214;
+  --text-normal: #dbdee1;
+  --text-muted: #949ba4;
+  --header-primary: #f2f3f5;
+  --header-secondary: #b5bac1;
+  --brand-color: #5865F2;
+  --brand-hover: #4752C4;
+  --channel-active: #404249;
+  --channel-hover: #35373c;
+  --input-bg: #383a40;
+  --modifier-hover: rgba(255, 255, 255, 0.02);
+  --modifier-active: rgba(255, 255, 255, 0.03);
+  --danger: #f23f43;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-dark);
-  color: var(--text-main);
-  overflow: hidden; /* Dışarı taşmaları engeller */
+  background-color: var(--bg-primary);
+  color: var(--text-normal);
+  overflow: hidden;
 }
 
-/* --- ÖZEL SCROLLBAR (Kaydırma Çubuğu) --- */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 243, 255, 0.2);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 243, 255, 0.5);
-}
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 4px; }
 
-/* --- GİRİŞ / KAYIT EKRANI (Cyberpunk Teması) --- */
-.login-container {
+/* -- GİRİŞ EKRANI (DISCORD TARZI) -- */
+.discord-bg {
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(circle at center, #111827 0%, #000000 100%);
-  position: relative;
+  background-image: url('https://theme.zdassets.com/theme_assets/678183/b7e9dce75f9edb23504e13b4699e208f28dacb29.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
-/* Arkaya ince bir ızgara (grid) deseni */
-.login-container::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-image: 
-    linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-  background-size: 30px 30px;
-  z-index: 0;
-}
-
-.login-box {
-  background: rgba(10, 15, 25, 0.7);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  padding: 40px;
-  border-radius: 20px;
-  border: 1px solid var(--border-neon);
-  box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
-  width: 400px;
-  z-index: 1;
+.discord-panel {
+  background-color: var(--bg-primary);
+  padding: 32px;
+  border-radius: 5px;
+  width: 480px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   text-align: center;
-  animation: floatIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.login-box h2 {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 28px;
+.discord-logo {
+  font-weight: 800;
+  font-size: 24px;
   margin-bottom: 20px;
-  letter-spacing: 2px;
   color: #fff;
 }
 
-.neon-logo {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 48px;
-  font-weight: 700;
-  color: var(--cyan-glow);
-  text-shadow: 0 0 10px var(--cyan-glow), 0 0 20px var(--cyan-glow);
+.input-group {
+  text-align: left;
   margin-bottom: 10px;
-  letter-spacing: 5px;
 }
 
-/* Form Elemanları */
-input {
+.input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--header-secondary);
+  margin-bottom: 8px;
+}
+
+.input-group input, .discord-select {
   width: 100%;
-  padding: 12px 15px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  outline: none;
-  transition: all 0.3s ease;
-  font-family: 'Inter', sans-serif;
-}
-
-input:focus {
-  border-color: var(--cyan-glow);
-  box-shadow: 0 0 10px rgba(0, 243, 255, 0.2) inset;
-}
-
-.neon-button {
-  background: transparent;
-  color: var(--cyan-glow);
-  border: 1px solid var(--cyan-glow);
-  padding: 12px;
-  border-radius: 8px;
+  padding: 10px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--text-normal);
   font-size: 16px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 600;
-  letter-spacing: 1px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.input-group input:focus { border-color: var(--brand-color); }
+
+.discord-button {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  margin-top: 10px;
+  transition: background-color 0.2s;
 }
+.blurple-btn { background-color: var(--brand-color); }
+.blurple-btn:hover { background-color: var(--brand-hover); }
 
-.neon-button:hover {
-  background: var(--cyan-glow);
-  color: #000;
-  box-shadow: 0 0 15px var(--cyan-glow);
-  transform: translateY(-2px);
-}
+.link-text { color: #00a8fc; font-size: 14px; cursor: pointer; text-align: left; }
+.link-text:hover { text-decoration: underline; }
 
-/* --- ANA DISCORD DÜZENİ --- */
-.discord-layout {
-  display: flex;
-  height: 100vh;
-  background-color: var(--bg-dark);
-}
+/* -- ANA DÜZEN -- */
+.discord-layout { display: flex; height: 100vh; }
 
-/* Sol Menü (Sunucular) */
-.server-sidebar {
-  width: 70px;
-  background: rgba(5, 7, 10, 0.9);
+/* SOL SUNUCU LİSTESİ */
+.server-sidebar-discord {
+  width: 72px;
+  background-color: var(--bg-tertiary);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 15px;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+  gap: 8px;
 }
 
-.server-icon {
+.server-icon-discord {
   width: 48px;
   height: 48px;
-  background: rgba(25, 35, 55, 0.8);
-  border-radius: 50%; /* Yuvarlak başlangıç */
+  background-color: var(--bg-primary);
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: bold;
-  font-size: 20px;
-  color: white;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.server-icon:hover, .server-icon.active {
-  border-radius: 14px; /* Karemsi hover efekti (Discord tarzı) */
-  background: var(--cyan-glow);
-  color: #000;
-}
-
-/* İç Menü (Kanallar) */
-.channel-sidebar {
-  width: 250px;
-  background: rgba(12, 16, 25, 0.85);
-  backdrop-filter: var(--glass-blur);
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.server-header {
-  padding: 20px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.server-header h3 {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 20px;
-  letter-spacing: 1px;
-  color: white;
-  text-shadow: 0 0 5px rgba(255,255,255,0.3);
-}
-
-.channel-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 15px 10px;
-}
-
-.category-title {
-  font-size: 11px;
+  color: var(--text-normal);
   font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 5px;
-  padding-left: 5px;
-  letter-spacing: 1px;
-}
-
-.channel-item {
-  padding: 8px 10px;
-  margin-bottom: 4px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.channel-item .hash {
-  font-size: 18px;
-  opacity: 0.5;
-}
-
-.channel-item:hover {
-  background: var(--bg-panel-hover);
-  color: white;
-}
-
-.channel-item.active {
-  background: rgba(0, 243, 255, 0.15);
-  color: #fff;
-  border-left: 3px solid var(--cyan-glow);
-}
-
-/* Sesli Kontrol Paneli */
-.voice-control-panel {
-  background: rgba(0, 0, 0, 0.4);
-  padding: 15px;
-  border-top: 1px solid rgba(0, 243, 255, 0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.voice-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: #00ff88;
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #00ff88;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #00ff88;
-  animation: pulse 1.5s infinite;
-}
-
-.voice-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.voice-actions button {
-  flex: 1;
-  padding: 8px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  transition: 0.2s;
-}
-
-.mic-btn { background: rgba(255,255,255,0.1); color: white; }
-.mic-btn:hover { background: rgba(255,255,255,0.2); }
-.mic-btn.muted { background: rgba(255, 0, 85, 0.2); color: #ff0055; }
-
-.disconnect-btn { background: rgba(255, 0, 85, 0.2); color: #ff0055; }
-.disconnect-btn:hover { background: #ff0055; color: white; }
-
-/* Profil Çubuğu (Sol Alt) */
-.user-profile-bar {
-  background: rgba(5, 7, 10, 0.95);
-  padding: 12px 15px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.avatar-wrapper {
-  position: relative;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.1);
-}
-
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  border: 2px solid #07090f;
-}
-
-.user-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.user-info .username {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.user-info .status {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.settings-icon {
-  cursor: pointer;
-  opacity: 0.5;
-  transition: 0.2s;
-}
-.settings-icon:hover { opacity: 1; transform: rotate(45deg); }
-
-/* --- ANA SOHBET ALANI --- */
-.chat-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: radial-gradient(circle at top right, rgba(20,25,40,1) 0%, rgba(7,9,15,1) 100%);
-  position: relative;
-}
-
-.chat-header {
-  padding: 15px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(10, 15, 25, 0.5);
-  backdrop-filter: var(--glass-blur);
-}
-
-.chat-header h3 {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 22px;
-}
-
-.messages-container {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.message {
-  display: flex;
-  gap: 15px;
-  padding: 10px;
-  border-radius: 10px;
-  transition: background 0.2s;
-}
-
-.message:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.message-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.message-header {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
-.message-username {
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.message-time {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.message-text {
-  font-size: 14.5px;
-  line-height: 1.4;
-  color: #d1d5db;
-}
-
-/* Mesaj Yazma Alanı */
-.message-input-area {
-  padding: 20px;
-  background: transparent;
-}
-
-.input-wrapper {
-  background: rgba(20, 25, 35, 0.6);
-  border-radius: 12px;
-  padding: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: 0.3s;
-}
-
-.input-wrapper:focus-within {
-  border-color: rgba(0, 243, 255, 0.4);
-  box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
-}
-
-.input-wrapper input {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  font-size: 15px;
-  padding: 15px;
-}
-
-/* --- SAĞ MENÜ (Üyeler) --- */
-.members-sidebar {
-  width: 240px;
-  background: rgba(12, 16, 25, 0.85);
-  backdrop-filter: var(--glass-blur);
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-}
-
-.members-header {
-  padding: 20px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.members-list-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 15px;
-}
-
-.member-group h4 {
-  font-size: 11px;
-  margin-bottom: 10px;
-  margin-top: 15px;
-  letter-spacing: 1px;
-}
-
-.member-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.member-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.member-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-}
-
-.member-name {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* --- AYARLAR MODALI --- */
-.settings-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(5px);
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.settings-modal {
-  background: #0f141e;
-  padding: 30px;
-  border-radius: 15px;
-  border: 1px solid var(--border-neon);
-  box-shadow: 0 0 40px rgba(0, 243, 255, 0.15);
-  width: 350px;
-}
-
-.settings-modal h2 { margin-bottom: 20px; font-family: 'Rajdhani', sans-serif;}
-
-.setting-group { margin-bottom: 20px; }
-.setting-group label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--text-muted); }
-.setting-group select { width: 100%; padding: 10px; background: #07090f; color: white; border: 1px solid #333; border-radius: 5px; outline: none; }
-.color-picker { width: 100%; height: 40px; border: none; background: transparent; cursor: pointer; }
-
-/* --- ANİMASYONLAR --- */
-@keyframes floatIn {
-  from { opacity: 0; transform: translateY(20px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-  70% { box-shadow: 0 0 0 6px rgba(0, 255, 136, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
-}
-
-.animate-fade-in { animation: floatIn 0.5s ease forwards; }
-.animate-slide-in { animation: floatIn 0.3s ease forwards; }
-
-
-/* --- YENİ EKLENEN ODA VE SES STİLLERİ --- */
-
-/* Kanal Altındaki Avatarlar (Nested) */
-.nested-avatars {
-  padding-left: 25px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 2px;
-  margin-bottom: 5px;
-}
-
-.nested-user {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #adb5bd;
-}
-
-.nested-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  transition: all 0.1s ease;
-}
-
-/* Konuşma Efekti (Yeşil Parlama) */
-.speaking {
-  border-color: #00ff88 !important;
-  box-shadow: 0 0 15px rgba(0, 255, 136, 0.8), inset 0 0 5px rgba(0, 255, 136, 0.5) !important;
-  animation: pop 0.2s ease-in-out;
-}
-
-.speaking-pulse {
-  background-color: #00ff88;
-  box-shadow: 0 0 15px #00ff88;
-}
-
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-/* Sesli Kanal Aktif Renk */
-.voice-active {
-  background: rgba(0, 255, 136, 0.15) !important;
-  color: #00ff88 !important;
-  border-left: 3px solid #00ff88 !important;
-}
-
-/* --- CANLI YAYIN (EKRAN PAYLAŞIMI) STİLLERİ --- */
-
-.screenshare-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  padding: 20px;
-  background: rgba(5, 7, 10, 0.9);
-  border-bottom: 2px solid rgba(0, 243, 255, 0.2);
-  min-height: 250px;
-  max-height: 50vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) inset;
-}
-
-.video-card {
-  position: relative;
-  background: #000;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-  flex: 1 1 350px;
-  max-width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.video-card video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: #000;
-}
-
-.video-label {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  animation: pulse 2s infinite;
-}
-
-/* Ekran Paylaşım Butonu Özel Efekti */
-.share-btn {
-  background: rgba(0, 243, 255, 0.1) !important;
-  color: #00f3ff !important;
-}
-
-.share-btn:hover {
-  background: rgba(0, 243, 255, 0.3) !important;
-}
-
-.share-btn.active-share {
-  background: rgba(255, 0, 85, 0.2) !important;
-  color: #ff0055 !important;
-  border: 1px solid #ff0055;
-  box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
-}
-/* --- SOSYAL GÜNCELLEME STİLLERİ --- */
-
-/* Mesaj Silme İkonu */
-.delete-msg-btn {
-  cursor: pointer;
-  opacity: 0.2;
   transition: all 0.2s;
-  font-size: 14px;
-}
-.message:hover .delete-msg-btn {
-  opacity: 1;
-}
-.delete-msg-btn:hover {
-  transform: scale(1.2) rotate(10deg);
-  filter: drop-shadow(0 0 5px #ff0055);
 }
 
-/* Yazıyor... Animasyonu (Typing Indicator) */
-.typing-indicator {
-  position: absolute;
-  top: -22px;
-  left: 20px;
-  font-size: 12px;
-  color: var(--text-muted);
+.server-icon-discord:hover {
+  border-radius: 16px;
+  background-color: var(--brand-color);
+  color: white;
+}
+
+.server-icon-discord.active {
+  border-radius: 16px;
+  background-color: var(--brand-color);
+}
+
+.add-server { color: #23a559; background-color: var(--bg-primary); font-size: 24px; }
+.add-server:hover { background-color: #23a559; color: white; }
+
+.server-separator { width: 32px; height: 2px; background-color: var(--bg-primary); border-radius: 1px; }
+
+/* KANALLAR LİSTESİ */
+.channel-sidebar-discord {
+  width: 240px;
+  background-color: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+}
+
+.server-header-discord {
+  height: 48px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bg-tertiary);
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-style: italic;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.server-header-discord h3 { font-size: 16px; font-weight: 600; color: var(--header-primary); }
+
+.channel-list-discord { flex: 1; overflow-y: auto; padding: 12px 8px; }
+
+.category-title-discord {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  padding: 0 8px; margin-bottom: 4px;
+}
+
+.channel-item-discord {
+  padding: 6px 8px;
+  margin-bottom: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
   font-weight: 500;
 }
+.channel-item-discord:hover { background-color: var(--channel-hover); color: var(--text-normal); }
+.channel-item-discord.active { background-color: var(--channel-active); color: var(--header-primary); }
+.hash-discord { font-size: 18px; color: #80848e; }
 
-.typing-dots {
-  display: flex;
-  gap: 3px;
-}
-.typing-dots span {
-  width: 5px;
-  height: 5px;
-  background-color: var(--text-muted);
-  border-radius: 50%;
-  animation: bounce 1.4s infinite ease-in-out both;
-}
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+.add-channel-icon { cursor: pointer; color: var(--text-muted); }
+.add-channel-icon:hover { color: var(--text-normal); }
 
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+/* PROFİL BARI (SOL ALT) */
+.user-profile-bar-discord {
+  height: 52px;
+  background-color: #232428;
+  padding: 0 8px;
+  display: flex; align-items: center;
 }
+
+.avatar-wrapper-discord { position: relative; margin-right: 8px; }
+.avatar-discord { width: 32px; height: 32px; border-radius: 50%; }
+.status-dot-discord {
+  width: 10px; height: 10px; border-radius: 50%;
+  position: absolute; bottom: 0; right: 0;
+  border: 2px solid #232428;
+}
+
+.user-info-discord { flex: 1; display: flex; flex-direction: column; }
+.username-discord { font-size: 14px; font-weight: 600; color: var(--header-primary); line-height: 1.2; }
+.status-text-discord { font-size: 12px; color: var(--text-muted); line-height: 1.2; }
+
+.settings-icon-discord {
+  width: 32px; height: 32px;
+  display: flex; justify-content: center; align-items: center;
+  border-radius: 4px; cursor: pointer; color: var(--text-normal);
+}
+.settings-icon-discord:hover { background-color: var(--channel-hover); }
+
+/* SOHBET ALANI */
+.chat-area-discord { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); }
+
+.chat-header-discord {
+  height: 48px; padding: 0 16px;
+  border-bottom: 1px solid var(--bg-tertiary);
+  display: flex; align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.messages-container-discord { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+
+.empty-chat-discord { padding: 16px; margin-top: auto; }
+.welcome-icon { width: 68px; height: 68px; background-color: var(--channel-active); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 40px; color: white; margin-bottom: 16px; }
+
+/* -- MESAJ GRUPLAMA -- */
+.message-discord {
+  display: flex; padding: 2px 16px 2px 72px; position: relative; margin-top: 17px;
+}
+.message-discord:hover { background-color: var(--modifier-hover); }
+
+.message-discord.grouped { margin-top: 0; padding-top: 2px; padding-bottom: 2px; }
+
+.message-avatar-discord {
+  position: absolute; left: 16px; top: 2px;
+  width: 40px; height: 40px; border-radius: 50%;
+}
+
+.message-content-discord { flex: 1; }
+.message-header-discord { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.message-username-discord { font-size: 16px; font-weight: 500; cursor: pointer; }
+.message-username-discord:hover { text-decoration: underline; }
+.message-time-discord { font-size: 12px; color: var(--text-muted); }
+
+/* Gruplanmış mesajdaki saat (Hover olunca solda görünür Discord mantığı) */
+.message-time-hover {
+  position: absolute; left: 16px; font-size: 10px; color: transparent; width: 40px; text-align: right; user-select: none;
+}
+.message-discord.grouped:hover .message-time-hover { color: var(--text-muted); }
+
+.message-text-discord { font-size: 16px; line-height: 1.375; color: var(--text-normal); word-break: break-word; }
+
+/* Medyalar */
+.chat-image, .chat-video { max-width: 400px; max-height: 300px; border-radius: 8px; margin-top: 4px; }
+
+/* Mesaj Silme Butonu (Hover) */
+.message-actions-discord { position: absolute; right: 16px; top: -10px; background-color: var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius: 4px; display: none; padding: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
+.message-discord:hover .message-actions-discord { display: flex; }
+.action-btn { cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; }
+.action-btn:hover { background-color: var(--modifier-active); color: var(--danger); }
+
+/* -- MESAJ KUTUSU (YAZMA ALANI) -- */
+.message-input-area-discord { padding: 0 16px 24px 16px; position: relative; }
+
+.input-wrapper-discord {
+  background-color: var(--input-bg);
+  border-radius: 8px;
+  display: flex; align-items: center;
+  padding: 0 16px;
+}
+
+.add-media-btn {
+  background-color: var(--text-muted); color: var(--bg-primary);
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; justify-content: center; align-items: center;
+  font-size: 20px; font-weight: bold; cursor: pointer; margin-right: 16px; transition: 0.2s;
+}
+.add-media-btn:hover { color: var(--input-bg); background-color: var(--text-normal); }
+
+.chat-input-discord {
+  flex: 1; background: transparent; border: none; padding: 11px 0; color: var(--text-normal); font-size: 16px; outline: none;
+}
+
+.input-right-icons { display: flex; gap: 12px; color: var(--text-muted); }
+.icon-btn { cursor: pointer; font-size: 18px; filter: grayscale(1); opacity: 0.8; }
+.icon-btn:hover { filter: grayscale(0); opacity: 1; transform: scale(1.1); }
+
+/* Yazıyor Animasyonu */
+.typing-indicator-discord { position: absolute; top: -20px; left: 16px; font-size: 14px; color: var(--text-normal); font-weight: 500; }
+.dots-discord span { animation: blink 1.4s infinite both; }
+.dots-discord span:nth-child(2) { animation-delay: 0.2s; }
+.dots-discord span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%, 100% { opacity: 0.2; } 20% { opacity: 1; } }
+
+/* -- SAĞ MENÜ (ÜYELER) -- */
+.members-sidebar-discord { width: 240px; background-color: var(--bg-secondary); }
+.members-list-content-discord { padding: 24px 8px; }
+.role-title-discord { font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 0 8px; margin-bottom: 4px; }
+.member-item-discord { display: flex; align-items: center; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px; }
+.member-item-discord:hover { background-color: var(--modifier-hover); color: var(--text-normal); }
+.avatar-discord.small { width: 32px; height: 32px; }
+.status-dot-discord.small { width: 10px; height: 10px; border-width: 2px; border-color: var(--bg-secondary); }
+.member-name-discord { font-size: 16px; font-weight: 500; margin-left: 12px; }
+
+/* MODALLAR (AYARLAR/ŞİFRE) */
+.discord-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.discord-modal { background-color: var(--bg-primary); width: 440px; border-radius: 5px; padding: 24px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+.discord-modal h2 { font-size: 24px; font-weight: 700; color: var(--header-primary); margin-bottom: 8px; text-align: center; }
+.modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; background-color: var(--bg-secondary); padding: 16px -24px; margin: 24px -24px -24px -24px; padding: 16px 24px; border-radius: 0 0 5px 5px;}
+
+/* EKRAN PAYLAŞIMI CANLI YAYIN */
+.screenshare-grid-discord { display: flex; gap: 10px; padding: 16px; background-color: var(--bg-floating); border-bottom: 1px solid var(--bg-tertiary); min-height: 200px; max-height: 40vh; overflow-y: auto; }
+.video-card-discord { position: relative; background: #000; border-radius: 8px; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+.video-card-discord video { width: 100%; height: 100%; object-fit: contain; }
+.video-label-discord { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
+.live-badge { background: var(--danger); }
+
+/* Ses Odası Avatarları (Yeşil Halka) */
+.nested-avatars { padding-left: 28px; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+.nested-user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
+.nested-avatar { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; }
+.speaking-discord { border-color: #23a559 !important; box-shadow: 0 0 0 2px rgba(35, 165, 89, 0.3) !important; }
+
+/* Ses Kontrol Paneli */
+.voice-control-panel-discord { background-color: #232428; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; }
+.voice-status-discord { display: flex; flex-direction: column; }
+.disconnect-btn-discord { cursor: pointer; padding: 8px; border-radius: 4px; background-color: var(--bg-secondary); }
+.disconnect-btn-discord:hover { background-color: var(--modifier-hover); color: var(--danger); }
