@@ -23,15 +23,14 @@ function App() {
   const [girisYapildi, setGirisYapildi] = useState(false);
   const [ayarlarAcik, setAyarlarAcik] = useState(false);
   const [kullaniciDurumu, setKullaniciDurumu] = useState('Çevrimiçi');
-  const [avatarRenk, setAvatarRenk] = useState('#00f3ff');
-  const [avatarResmi, setAvatarResmi] = useState(''); // YENİ: Profil Fotoğrafı Linki
+  const [avatarRenk, setAvatarRenk] = useState('#5865F2'); // Default Discord Rengi
+  const [avatarResmi, setAvatarResmi] = useState('');
 
   const [aktifKanal, setAktifKanal] = useState(METIN_KANALLARI[0]);
   const [mesaj, setMesaj] = useState('');
   const [mesajListesi, setMesajListesi] = useState([]);
   const [kanaldakiKullanicilar, setKanaldakiKullanicilar] = useState([]);
   
-  // YENİ: Yazıyor Sensörü
   const [yazanKullanicilar, setYazanKullanicilar] = useState([]);
   const yazmaZamanlayici = useRef(null);
 
@@ -103,7 +102,7 @@ function App() {
       const res = await fetch(`${backendURL}/api/giris`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier: email, sifre }) });
       const data = await res.json();
       if (res.ok) { 
-        setKullaniciAdi(data.kullaniciAdi); setAvatarRenk(data.avatarRenk || '#00f3ff'); setAvatarResmi(data.avatarResmi || ''); setGirisYapildi(true); 
+        setKullaniciAdi(data.kullaniciAdi); setAvatarRenk(data.avatarRenk || '#5865F2'); setAvatarResmi(data.avatarResmi || ''); setGirisYapildi(true); 
       } else setHataMesaji(data.hata);
     } catch (err) { setHataMesaji("Bağlantı hatası."); }
   };
@@ -127,7 +126,7 @@ function App() {
   useEffect(() => {
     if (girisYapildi) {
       socket.emit('kanala_katil', { kanalAdi: aktifKanal, kullaniciBilgisi: { kullaniciAdi, durum: kullaniciDurumu, renk: avatarRenk, avatarResmi } });
-      setMesajListesi([]); setYazanKullanicilar([]); // Kanal değiştiğinde yazanları sıfırla
+      setMesajListesi([]); setYazanKullanicilar([]);
     }
   }, [aktifKanal, girisYapildi, kullaniciDurumu, avatarRenk, avatarResmi]);
 
@@ -137,8 +136,6 @@ function App() {
     socket.on('kullanici_listesi', (liste) => setKanaldakiKullanicilar(liste.filter(k => k.durum !== 'Görünmez')));
     socket.on('sesteki_kullanicilar', (liste) => setSestekiKullanicilar(liste));
     socket.on('odalar_guncellendi', (odalar) => setOzelOdalar(odalar));
-    
-    // YENİ DİNLEYİCİLER (Yazıyor... ve Silme)
     socket.on('kullanici_yaziyor', (kim) => setYazanKullanicilar(p => p.includes(kim) ? p : [...p, kim]));
     socket.on('kullanici_yazmayi_birakti', (kim) => setYazanKullanicilar(p => p.filter(k => k !== kim)));
     socket.on('mesaj_silindi', (id) => setMesajListesi(p => p.filter(m => m.mesajId !== id)));
@@ -225,21 +222,18 @@ function App() {
     }
   };
 
-  // YENİ: Yazıyor... Olayını Tetikleme
   const mesajYazimiDegisti = (e) => {
     setMesaj(e.target.value);
     socket.emit('yaziyor', { kanal: aktifKanal, kullaniciAdi });
     clearTimeout(yazmaZamanlayici.current);
-    yazmaZamanlayici.current = setTimeout(() => {
-      socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi });
-    }, 1500);
+    yazmaZamanlayici.current = setTimeout(() => { socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); }, 1500);
   };
 
   const mesajGonder = () => {
     if (mesaj.trim() !== '') {
       socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: mesaj, dosyaTipi: 'text', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi });
       setMesaj('');
-      socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); // Gönderince yazmayı durdur
+      socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); 
     }
   };
 
@@ -259,7 +253,6 @@ function App() {
       const data = await res.json();
       if (data.secure_url) {
         if (isAvatar) {
-          // YENİ: Avatar Yükleme Kaydı
           setAvatarResmi(data.secure_url);
           await fetch(`${backendURL}/api/avatar-guncelle`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, avatarResmi: data.secure_url }) });
         } else {
@@ -270,30 +263,47 @@ function App() {
     finally { setMedyaYukleniyor(false); e.target.value = ''; }
   };
 
-  const durumRengiGetir = (durum) => { if(durum === 'Çevrimiçi') return '#00ff88'; if(durum === 'Boşta') return '#ffea00'; if(durum === 'Rahatsız Etmeyin') return '#ff0055'; return '#4a4d57'; };
+  const durumRengiGetir = (durum) => { if(durum === 'Çevrimiçi') return '#23a559'; if(durum === 'Boşta') return '#f0b232'; if(durum === 'Rahatsız Etmeyin') return '#f23f43'; return '#80848e'; };
   const grupluKullanicilar = { 'Çevrimiçi': kanaldakiKullanicilar.filter(k => k.durum === 'Çevrimiçi'), 'Boşta': kanaldakiKullanicilar.filter(k => k.durum === 'Boşta'), 'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin') };
 
   if (!girisYapildi) {
     return (
-      <div className="login-container futuristic-bg">
-        <div className="login-box glass-panel" style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-          <div className="neon-logo">NEXUS</div>
-          <h2>{kayitModu ? 'Ajan Kaydı Oluştur' : 'Sisteme Bağlan'}</h2>
-          {hataMesaji && <div style={{color: '#ff0055', textShadow: '0 0 5px #ff0055'}}>{hataMesaji}</div>}
+      <div className="login-container discord-bg">
+        <div className="login-box discord-panel">
+          <div className="discord-logo">DISCORD CLONE</div>
+          <h2 style={{color: '#f2f3f5', marginBottom: '8px', fontSize: '24px'}}>{kayitModu ? 'Hesap Oluştur' : 'Tekrar Hoş Geldin!'}</h2>
+          <p style={{color: '#b5bac1', fontSize: '14px', marginBottom: '20px'}}>{kayitModu ? 'Aramıza katıl.' : 'Seni gördüğümüze çok sevindik!'}</p>
+          {hataMesaji && <div style={{color: '#f23f43', fontSize: '13px', marginBottom: '10px'}}>{hataMesaji}</div>}
+          
           {kayitModu ? (
-            <form onSubmit={kayitOlFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-              <input type="text" placeholder="Kod Adı" value={kullaniciAdiInput} onChange={(e) => setKullaniciAdiInput(e.target.value)} required />
-              <input type="email" placeholder="E-Posta Adresi" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              <input type="password" placeholder="Şifre" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
-              <button type="submit" className="neon-button">Kayıt Ol</button>
-              <p onClick={() => {setKayitModu(false); setHataMesaji(''); setEmail(''); setSifre('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Zaten bir ajan mısın? Giriş Yap</p>
+            <form onSubmit={kayitOlFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+              <div className="input-group">
+                <label>KULLANICI ADI</label>
+                <input type="text" value={kullaniciAdiInput} onChange={(e) => setKullaniciAdiInput(e.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label>E-POSTA</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label>ŞİFRE</label>
+                <input type="password" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
+              </div>
+              <button type="submit" className="discord-button blurple-btn">Devam Et</button>
+              <p onClick={() => {setKayitModu(false); setHataMesaji(''); setEmail(''); setSifre('');}} className="link-text">Zaten bir hesabın var mı?</p>
             </form>
           ) : (
-            <form onSubmit={girisYapFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-              <input type="text" placeholder="E-Posta veya Kod Adı" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
-              <input type="password" placeholder="Şifre" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
-              <button type="submit" className="neon-button">Giriş Protokolünü Başlat</button>
-              <p onClick={() => {setKayitModu(true); setHataMesaji(''); setEmail(''); setSifre('');}} style={{color: '#00f3ff', cursor: 'pointer', textDecoration: 'underline'}}>Yeni misin? Kayıt Ol</p>
+            <form onSubmit={girisYapFormSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+              <div className="input-group">
+                <label>E-POSTA VEYA KULLANICI ADI</label>
+                <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+              </div>
+              <div className="input-group">
+                <label>ŞİFRE</label>
+                <input type="password" value={sifre} onChange={(e) => setSifre(e.target.value)} required />
+              </div>
+              <button type="submit" className="discord-button blurple-btn">Giriş Yap</button>
+              <p onClick={() => {setKayitModu(true); setHataMesaji(''); setEmail(''); setSifre('');}} className="link-text">Hesaba mı ihtiyacın var? Kaydol</p>
             </form>
           )}
         </div>
@@ -301,12 +311,10 @@ function App() {
     );
   }
 
-  // YENİ: Dinamik Avatar Tarzı
   const avatarStili = (renk, resim) => ({
     backgroundColor: !resim ? renk : 'transparent',
     backgroundImage: resim ? `url(${resim})` : 'none',
     backgroundSize: 'cover', backgroundPosition: 'center',
-    boxShadow: `0 0 8px ${renk}`, border: `2px solid ${resim ? renk : 'transparent'}`
   });
 
   const OdaIciAvatarlar = ({ kanalAdi }) => {
@@ -316,7 +324,7 @@ function App() {
       <div className="nested-avatars">
         {oOdakiler.map(k => (
           <div key={k.socketId} className="nested-user">
-            <div className={`nested-avatar ${konusanlar.includes(k.socketId) ? 'speaking' : ''}`} style={avatarStili(k.renk, k.avatarResmi)}></div>
+            <div className={`nested-avatar ${konusanlar.includes(k.socketId) ? 'speaking-discord' : ''}`} style={avatarStili(k.renk, k.avatarResmi)}></div>
             <span>{k.kullaniciAdi}</span>
           </div>
         ))}
@@ -328,185 +336,220 @@ function App() {
   const yayinEkraniAcik = yerelEkranAkim || aktifEkranYayinlari.length > 0;
 
   return (
-    <div className="discord-layout">
+    <div className="discord-layout main-theme">
       {girisSifreModali.acik && (
-        <div className="settings-overlay">
-          <div className="settings-modal glass-panel">
-            <h2>🔒 {girisSifreModali.odaIsmi} (Şifreli)</h2>
+        <div className="discord-modal-overlay">
+          <div className="discord-modal">
+            <h2>🔒 {girisSifreModali.odaIsmi} Şifresi</h2>
             <form onSubmit={sifreliOdayaGirisIet}>
-              <div className="setting-group"><input type="password" placeholder="Oda Şifresi" value={girilenOdaSifresi} onChange={(e) => setGirilenOdaSifresi(e.target.value)} required autoFocus style={{width: '100%'}}/></div>
-              <div style={{display:'flex', gap:'10px'}}><button type="submit" className="neon-button">Bağlan</button><button type="button" className="neon-button close-btn" onClick={() => setGirisSifreModali({acik: false, odaIsmi: ''})}>İptal</button></div>
+              <div className="input-group" style={{marginTop:'15px'}}><input type="password" value={girilenOdaSifresi} onChange={(e) => setGirilenOdaSifresi(e.target.value)} required autoFocus /></div>
+              <div className="modal-actions"><button type="button" className="link-text" onClick={() => setGirisSifreModali({acik: false, odaIsmi: ''})}>İptal</button><button type="submit" className="discord-button blurple-btn" style={{width:'auto'}}>Bağlan</button></div>
             </form>
           </div>
         </div>
       )}
 
       {odaKurModaliAcik && (
-        <div className="settings-overlay">
-          <div className="settings-modal glass-panel">
-            <h2>Kendi Odanı Kur</h2>
+        <div className="discord-modal-overlay">
+          <div className="discord-modal">
+            <h2>Kanal Oluştur</h2>
+            <p style={{color:'#b5bac1', fontSize:'14px', marginBottom:'20px'}}>Sohbet etmek için yeni bir alan oluştur.</p>
             <form onSubmit={ozelOdaKur}>
-              <div className="setting-group"><label>Oda İsmi:</label><input type="text" value={yeniOdaIsmi} onChange={(e) => setYeniOdaIsmi(e.target.value)} required /></div>
-              <div className="setting-group"><label>Güvenlik:</label><select value={yeniOdaTipi} onChange={(e) => setYeniOdaTipi(e.target.value)}><option value="public">🌍 Herkese Açık</option><option value="private">🔒 Şifreli</option></select></div>
-              {yeniOdaTipi === 'private' && (<div className="setting-group"><label>Şifre:</label><input type="password" value={yeniOdaSifresi} onChange={(e) => setYeniOdaSifresi(e.target.value)} required /></div>)}
-              <div style={{display:'flex', gap:'10px'}}><button type="submit" className="neon-button">Oluştur</button><button type="button" className="neon-button close-btn" onClick={() => setOdaKurModaliAcik(false)}>İptal</button></div>
+              <div className="input-group"><label>KANAL ADI</label><input type="text" value={yeniOdaIsmi} onChange={(e) => setYeniOdaIsmi(e.target.value)} required placeholder="yeni-kanal"/></div>
+              <div className="input-group"><label>GİZLİLİK SEVİYESİ</label><select value={yeniOdaTipi} onChange={(e) => setYeniOdaTipi(e.target.value)} className="discord-select"><option value="public">🌍 Herkese Açık</option><option value="private">🔒 Özel (Şifreli)</option></select></div>
+              {yeniOdaTipi === 'private' && (<div className="input-group"><label>ŞİFRE</label><input type="password" value={yeniOdaSifresi} onChange={(e) => setYeniOdaSifresi(e.target.value)} required /></div>)}
+              <div className="modal-actions"><button type="button" className="link-text" onClick={() => setOdaKurModaliAcik(false)}>İptal</button><button type="submit" className="discord-button blurple-btn" style={{width:'auto'}}>Kanalı Oluştur</button></div>
             </form>
           </div>
         </div>
       )}
 
       {ayarlarAcik && (
-        <div className="settings-overlay">
-          <div className="settings-modal glass-panel">
+        <div className="discord-modal-overlay">
+          <div className="discord-modal settings">
             <h2>Kullanıcı Ayarları</h2>
-            <div className="setting-group">
-              <label>Durum Modülü:</label>
-              <select value={kullaniciDurumu} onChange={(e) => setKullaniciDurumu(e.target.value)}><option value="Çevrimiçi">Çevrimiçi</option><option value="Boşta">Boşta</option><option value="Rahatsız Etmeyin">Rahatsız Etmeyin</option><option value="Görünmez">Görünmez</option></select>
+            <div className="input-group">
+              <label>DURUM</label>
+              <select value={kullaniciDurumu} onChange={(e) => setKullaniciDurumu(e.target.value)} className="discord-select"><option value="Çevrimiçi">Çevrimiçi</option><option value="Boşta">Boşta</option><option value="Rahatsız Etmeyin">Rahatsız Etmeyin</option><option value="Görünmez">Görünmez</option></select>
             </div>
-            <div className="setting-group">
-              <label>Profil Rengi:</label>
-              <input type="color" value={avatarRenk} onChange={(e) => setAvatarRenk(e.target.value)} className="color-picker" />
+            <div className="input-group">
+              <label>PROFİL RENGİ</label>
+              <input type="color" value={avatarRenk} onChange={(e) => setAvatarRenk(e.target.value)} className="color-picker-discord" />
             </div>
-            {/* YENİ: Profil Fotoğrafı Yükleme */}
-            <div className="setting-group">
-              <label>Özel Profil Fotoğrafı (İsteğe Bağlı):</label>
-              <input type="file" accept="image/*" onChange={(e) => medyaYukle(e, true)} disabled={medyaYukleniyor} />
-              {medyaYukleniyor && <span style={{fontSize:'12px', color:'#00f3ff'}}>Medya Buluta Aktarılıyor...</span>}
+            <div className="input-group">
+              <label>PROFİL FOTOĞRAFI DEĞİŞTİR</label>
+              <input type="file" accept="image/*" onChange={(e) => medyaYukle(e, true)} disabled={medyaYukleniyor} className="file-input-discord" />
+              {medyaYukleniyor && <span style={{fontSize:'12px', color:'#5865F2'}}>Yükleniyor...</span>}
             </div>
-            <button className="neon-button close-btn" onClick={() => setAyarlarAcik(false)}>Kapat</button>
+            <div className="modal-actions" style={{justifyContent:'flex-end'}}><button className="discord-button blurple-btn" style={{width:'auto'}} onClick={() => setAyarlarAcik(false)}>Tamamlandı</button></div>
           </div>
         </div>
       )}
 
-      <div className="server-sidebar"><div className="server-icon active" style={{boxShadow: `0 0 15px ${avatarRenk}`}}>NX</div></div>
+      {/* EN SOL SUNUCU LİSTESİ */}
+      <div className="server-sidebar-discord">
+        <div className="server-icon-discord active">
+           <img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg" alt="Discord" style={{width:'28px'}}/>
+        </div>
+        <div className="server-separator"></div>
+        <div className="server-icon-discord server-custom" style={{backgroundColor: avatarRenk}}>NX</div>
+        <div className="server-icon-discord add-server">+</div>
+      </div>
 
-      <div className="channel-sidebar">
-        <div className="server-header"><h3>NEXUS SUNUCUSU</h3></div>
-        <div className="channel-list">
-          <p className="category-title">METİN AĞLARI</p>
+      {/* KANALLAR LİSTESİ */}
+      <div className="channel-sidebar-discord">
+        <div className="server-header-discord"><h3>Nexus Sunucusu</h3></div>
+        <div className="channel-list-discord">
+          <div className="category-title-discord">METİN KANALLARI</div>
           {METIN_KANALLARI.map((kanal) => (
-            <div key={kanal} className={`channel-item ${aktifKanal === kanal ? 'active' : ''}`} onClick={() => setAktifKanal(kanal)}><span className="hash">#</span> {kanal}</div>
+            <div key={kanal} className={`channel-item-discord ${aktifKanal === kanal ? 'active' : ''}`} onClick={() => setAktifKanal(kanal)}><span className="hash-discord">#</span> {kanal}</div>
           ))}
 
-          <p className="category-title" style={{marginTop: '20px'}}>SABİT SES BAĞLANTILARI</p>
+          <div className="category-title-discord" style={{marginTop: '20px'}}>SES KANALLARI</div>
           {SABIT_SES_KANALLARI.map((kanal) => (
             <div key={kanal}>
-              <div className={`channel-item voice-channel ${aktifSesKanalı === kanal ? 'voice-active' : ''}`} onClick={() => sesliKanalaTikla(kanal, 'public')}><span className="hash">🔊</span> {kanal}</div>
+              <div className={`channel-item-discord voice ${aktifSesKanalı === kanal ? 'active-voice' : ''}`} onClick={() => sesliKanalaTikla(kanal, 'public')}><span className="hash-discord">🔊</span> {kanal}</div>
               <OdaIciAvatarlar kanalAdi={kanal} />
             </div>
           ))}
 
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px'}}>
-             <p className="category-title" style={{margin:0}}>ÖZEL ODALAR</p><span style={{color: '#00f3ff', cursor: 'pointer', fontSize: '18px', paddingRight: '10px'}} onClick={() => setOdaKurModaliAcik(true)}>+</span>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingRight: '10px'}}>
+             <div className="category-title-discord" style={{margin:0}}>ÖZEL ODALAR</div>
+             <span className="add-channel-icon" onClick={() => setOdaKurModaliAcik(true)}>+</span>
           </div>
           {ozelOdalar.map((oda) => (
             <div key={oda._id}>
-              <div className={`channel-item voice-channel ${aktifSesKanalı === oda.isim ? 'voice-active' : ''}`} onClick={() => sesliKanalaTikla(oda.isim, oda.tip)}><span className="hash">{oda.tip === 'private' ? '🔒' : '🔊'}</span> {oda.isim}</div>
+              <div className={`channel-item-discord voice ${aktifSesKanalı === oda.isim ? 'active-voice' : ''}`} onClick={() => sesliKanalaTikla(oda.isim, oda.tip)}><span className="hash-discord">{oda.tip === 'private' ? '🔒' : '🔊'}</span> {oda.isim}</div>
               <OdaIciAvatarlar kanalAdi={oda.isim} />
             </div>
           ))}
         </div>
 
         {aktifSesKanalı && (
-          <div className="voice-control-panel glass-panel">
-            <div className="voice-status"><div className={`pulse-dot ${konusanlar.includes(socket.id) ? 'speaking-pulse' : ''}`}></div><span>{aktifSesKanalı} Bağlı</span></div>
-            <div className="voice-actions">
-              <button className={`mic-btn ${!mikrofonAcik ? 'muted' : ''}`} onClick={mikrofonuGecisYap}>{mikrofonAcik ? '🎙️' : '🔇'}</button>
-              <button className={`mic-btn share-btn ${ekranPaylasiliyor ? 'active-share' : ''}`} onClick={ekranPaylasiminiDegistir}>{ekranPaylasiliyor ? '💻 Kapat' : '🖥️ Paylaş'}</button>
-              <button className="disconnect-btn" onClick={sesliKanaldanAyril}>❌</button>
+          <div className="voice-control-panel-discord">
+            <div className="voice-status-discord">
+              <span style={{color:'#23a559', fontWeight:'600'}}>Ses Bağlantısı Kuruldu</span>
+              <span style={{fontSize:'12px', color:'#b5bac1'}}>{aktifSesKanalı}</span>
             </div>
+            <div className="disconnect-btn-discord" onClick={sesliKanaldanAyril} title="Bağlantıyı Kes">📞</div>
           </div>
         )}
 
-        <div className="user-profile-bar">
-          <div className="avatar-wrapper">
-            <div className={`avatar ${konusanlar.includes(socket.id) ? 'speaking' : ''}`} style={avatarStili(avatarRenk, avatarResmi)}></div>
-            <div className="status-dot" style={{ backgroundColor: durumRengiGetir(kullaniciDurumu), boxShadow: `0 0 8px ${durumRengiGetir(kullaniciDurumu)}` }}></div>
+        <div className="user-profile-bar-discord">
+          <div className="avatar-wrapper-discord">
+            <div className="avatar-discord" style={avatarStili(avatarRenk, avatarResmi)}></div>
+            <div className="status-dot-discord" style={{ backgroundColor: durumRengiGetir(kullaniciDurumu) }}></div>
           </div>
-          <div className="user-info"><span className="username">{kullaniciAdi}</span><span className="status">{kullaniciDurumu}</span></div>
-          <div className="settings-icon" onClick={() => setAyarlarAcik(true)}>⚙️</div>
+          <div className="user-info-discord">
+            <div className="username-discord">{kullaniciAdi}</div>
+            <div className="status-text-discord">{kullaniciDurumu}</div>
+          </div>
+          <div className="settings-icon-discord" onClick={() => setAyarlarAcik(true)}>⚙️</div>
         </div>
       </div>
 
-      <div className="chat-area">
-        <div className="chat-header"><span className="hash">#</span><h3>{aktifKanal}</h3></div>
+      {/* SOHBET ALANI */}
+      <div className="chat-area-discord">
+        <div className="chat-header-discord"><span className="hash-discord" style={{fontSize:'24px', marginRight:'10px'}}>#</span><h3>{aktifKanal}</h3></div>
         
         {yayinEkraniAcik && (
-          <div className="screenshare-grid animate-slide-in">
+          <div className="screenshare-grid-discord">
             {yerelEkranAkim && (
-              <div className="video-card"><video autoPlay muted controls ref={el => {if(el) el.srcObject = yerelEkranAkim}} /><span className="video-label" style={{color: avatarRenk}}>● Sen (Canlı)</span></div>
+              <div className="video-card-discord"><video autoPlay muted controls ref={el => {if(el) el.srcObject = yerelEkranAkim}} /><span className="video-label-discord">Canlı (Sen)</span></div>
             )}
             {aktifEkranYayinlari.map((s, i) => (
-              <div key={i} className="video-card"><video autoPlay controls ref={el => {if(el && el.srcObject !== s) el.srcObject = s}} /><span className="video-label" style={{color: '#ff0055'}}>● Yayın İzleniyor</span></div>
+              <div key={i} className="video-card-discord"><video autoPlay controls ref={el => {if(el && el.srcObject !== s) el.srcObject = s}} /><span className="video-label-discord live-badge">CANLI YAYIN</span></div>
             ))}
           </div>
         )}
 
-        <div className="messages-container" style={{ height: yayinEkraniAcik ? '50%' : '100%' }}>
+        <div className="messages-container-discord" style={{ height: yayinEkraniAcik ? '50%' : '100%' }}>
           {mesajListesi.length === 0 ? (
-            <div className="empty-chat animate-fade-in">
-              <h3 style={{textShadow: `0 0 10px ${avatarRenk}`}}>#{aktifKanal} ağına bağlandın.</h3><p>İletişim protokolünü başlat...</p>
+            <div className="empty-chat-discord">
+              <div className="welcome-icon">#</div>
+              <h2>{aktifKanal} kanalına hoş geldin!</h2>
+              <p>Bu, #{aktifKanal} kanalının başlangıcıdır.</p>
             </div>
           ) : (
-            mesajListesi.map((m, index) => (
-              <div key={index} className="message animate-slide-in">
-                <div className="message-avatar" style={avatarStili(m.renk, m.avatarResmi)}></div>
-                <div className="message-content" style={{ width: '100%' }}>
-                  <div className="message-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <span className="message-username" style={{ color: m.renk, textShadow: `0 0 5px ${m.renk}88` }}>{m.kullaniciAdi}</span>
-                      <span className="message-time" style={{ marginLeft: '10px' }}>{m.saat}</span>
-                    </div>
-                    {/* YENİ: Kendi mesajını Silme Butonu */}
-                    {m.kullaniciAdi === kullaniciAdi && (
-                      <span className="delete-msg-btn" onClick={() => socket.emit('mesaj_sil', { kanal: aktifKanal, mesajId: m.mesajId })} title="Mesajı Geri Çek">🗑️</span>
+            // YENİ: MESAJ GRUPLAMA MANTIĞI
+            mesajListesi.map((m, index) => {
+              const oncekiMesaj = index > 0 ? mesajListesi[index - 1] : null;
+              // Eğer önceki mesajla aynı kişi atıyorsa ve arada dosya tipi farkı vb aşırı durum yoksa grupla
+              const ayniKisi = oncekiMesaj && oncekiMesaj.kullaniciAdi === m.kullaniciAdi;
+
+              return (
+                <div key={index} className={`message-discord ${ayniKisi ? 'grouped' : ''}`}>
+                  {!ayniKisi && <div className="message-avatar-discord" style={avatarStili(m.renk, m.avatarResmi)}></div>}
+                  
+                  <div className="message-content-discord">
+                    {!ayniKisi && (
+                      <div className="message-header-discord">
+                        <span className="message-username-discord" style={{color: m.renk}}>{m.kullaniciAdi}</span>
+                        <span className="message-time-discord">{m.saat}</span>
+                      </div>
                     )}
+                    
+                    {ayniKisi && <div className="message-time-hover">{m.saat}</div>}
+
+                    <div className="message-text-discord">
+                      {m.dosyaTipi === 'image' ? (
+                        <img src={m.metin} alt="Görsel" className="chat-image" />
+                      ) : m.dosyaTipi === 'video' ? (
+                        <video src={m.metin} controls className="chat-video" />
+                      ) : ( m.metin )}
+                    </div>
                   </div>
-                  <div className="message-text">
-                    {m.dosyaTipi === 'image' ? (
-                      <img src={m.metin} alt="Görsel" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '10px', border: `2px solid ${m.renk}` }} />
-                    ) : m.dosyaTipi === 'video' ? (
-                      <video src={m.metin} controls style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '10px', border: `2px solid ${m.renk}` }} />
-                    ) : ( m.metin )}
-                  </div>
+                  
+                  {m.kullaniciAdi === kullaniciAdi && (
+                    <div className="message-actions-discord">
+                       <span className="action-btn" onClick={() => socket.emit('mesaj_sil', { kanal: aktifKanal, mesajId: m.mesajId })} title="Sil">🗑️</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={mesajlarSonuRef} />
         </div>
 
-        <div className="message-input-area" style={{ position: 'relative' }}>
-          {/* YENİ: Yazıyor Bildirimi */}
+        <div className="message-input-area-discord">
           {yazanKullanicilar.length > 0 && (
-            <div className="typing-indicator">
-              <div className="typing-dots"><span></span><span></span><span></span></div>
-              {yazanKullanicilar.join(', ')} yazıyor...
+            <div className="typing-indicator-discord">
+              <span className="dots-discord"><span>.</span><span>.</span><span>.</span></span>
+              <strong>{yazanKullanicilar.join(', ')}</strong> yazıyor...
             </div>
           )}
 
-          <div className="input-wrapper glass-input" style={{ display: 'flex', alignItems: 'center', padding: '5px 15px', gap: '15px' }}>
+          <div className="input-wrapper-discord">
             <input type="file" id="medya-secici" style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => medyaYukle(e, false)} disabled={medyaYukleniyor} />
-            <label htmlFor="medya-secici" style={{ cursor: medyaYukleniyor ? 'wait' : 'pointer', fontSize: '26px', color: medyaYukleniyor ? '#8b9bb4' : '#00f3ff' }}>{medyaYukleniyor ? '⏳' : '⊕'}</label>
-            <input type="text" value={mesaj} onChange={mesajYazimiDegisti} placeholder={medyaYukleniyor ? "Medya aktarılıyor..." : `#${aktifKanal} ağına veri gönder...`} onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} autoFocus disabled={medyaYukleniyor} style={{ flex: 1, padding: '10px 0' }} />
+            <label htmlFor="medya-secici" className="add-media-btn">
+              {medyaYukleniyor ? '⏳' : '+'}
+            </label>
+            <input type="text" value={mesaj} onChange={mesajYazimiDegisti} placeholder={medyaYukleniyor ? "Medya aktarılıyor..." : `#${aktifKanal} kanalına mesaj gönder`} onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} autoFocus disabled={medyaYukleniyor} className="chat-input-discord" />
+            <div className="input-right-icons">
+               <span title="Hediye" className="icon-btn">🎁</span>
+               <span title="GIF" className="icon-btn">GIF</span>
+               <span title="Çıkartma" className="icon-btn">📄</span>
+               <span title="Emoji" className="icon-btn">😊</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="members-sidebar">
-        <div className="members-header"><h3>AĞDAKİ ÜYELER</h3></div>
-        <div className="members-list-content">
+      {/* SAĞ ÜYELER LİSTESİ */}
+      <div className="members-sidebar-discord">
+        <div className="members-list-content-discord">
           {['Çevrimiçi', 'Boşta', 'Rahatsız Etmeyin'].map((durum) => (
             grupluKullanicilar[durum].length > 0 && (
-              <div key={durum} className="member-group">
-                <h4 style={{ color: durumRengiGetir(durum), textShadow: `0 0 5px ${durumRengiGetir(durum)}88` }}>{durum.toUpperCase()} — {grupluKullanicilar[durum].length}</h4>
+              <div key={durum} className="member-group-discord">
+                <h4 className="role-title-discord">{durum.toUpperCase()} — {grupluKullanicilar[durum].length}</h4>
                 {grupluKullanicilar[durum].map(k => (
-                  <div key={k.id} className="member-item animate-fade-in">
-                    <div className="avatar-wrapper">
-                      <div className="member-avatar" style={avatarStili(k.renk, k.avatarResmi)}></div>
-                      <div className="status-dot" style={{ backgroundColor: durumRengiGetir(k.durum) }}></div>
+                  <div key={k.id} className="member-item-discord">
+                    <div className="avatar-wrapper-discord small">
+                      <div className="avatar-discord small" style={avatarStili(k.renk, k.avatarResmi)}></div>
+                      <div className="status-dot-discord small" style={{ backgroundColor: durumRengiGetir(k.durum) }}></div>
                     </div>
-                    <span className="member-name" style={{ color: k.renk }}>{k.kullaniciAdi}</span>
+                    <span className="member-name-discord" style={{ color: k.renk }}>{k.kullaniciAdi}</span>
                   </div>
                 ))}
               </div>
