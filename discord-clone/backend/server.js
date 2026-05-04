@@ -23,11 +23,11 @@ const kullaniciSemasi = new mongoose.Schema({
   kullaniciAdi: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   sifre: { type: String, required: true },
-  avatarRenk: { type: String, default: '#00f3ff' }
+  avatarRenk: { type: String, default: '#00f3ff' },
+  avatarResmi: { type: String, default: '' } // YENİ: Profil Fotoğrafı Linki
 });
 const Kullanici = mongoose.model('Kullanici', kullaniciSemasi);
 
-// YENİ: Oda Şeması
 const odaSemasi = new mongoose.Schema({
   isim: { type: String, required: true, unique: true },
   tip: { type: String, enum: ['public', 'private'], default: 'public' },
@@ -36,7 +36,7 @@ const odaSemasi = new mongoose.Schema({
 });
 const Oda = mongoose.model('Oda', odaSemasi);
 
-// --- API ROTALARI (Kayıt / Giriş / Odalar) ---
+// --- API ROTALARI ---
 app.post('/api/kayit', async (req, res) => {
   try {
     const { kullaniciAdi, email, sifre } = req.body;
@@ -59,19 +59,26 @@ app.post('/api/giris', async (req, res) => {
     const sifreDogruMu = await bcrypt.compare(sifre, kullanici.sifre);
     if (!sifreDogruMu) return res.status(400).json({ hata: "Şifre hatalı." });
 
-    res.status(200).json({ kullaniciAdi: kullanici.kullaniciAdi, avatarRenk: kullanici.avatarRenk, email: kullanici.email });
+    res.status(200).json({ kullaniciAdi: kullanici.kullaniciAdi, avatarRenk: kullanici.avatarRenk, avatarResmi: kullanici.avatarResmi, email: kullanici.email });
   } catch (err) { res.status(500).json({ hata: "Sunucu hatası." }); }
 });
 
-// YENİ: Odaları Getir
+// YENİ: Profil Fotoğrafı Güncelleme
+app.post('/api/avatar-guncelle', async (req, res) => {
+  try {
+    const { email, avatarResmi } = req.body;
+    await Kullanici.findOneAndUpdate({ email }, { avatarResmi });
+    res.status(200).json({ mesaj: "Profil güncellendi" });
+  } catch (err) { res.status(500).json({ hata: "Sunucu hatası." }); }
+});
+
 app.get('/api/odalar', async (req, res) => {
   try {
-    const odalar = await Oda.find({}, '-sifre'); // Şifreleri gizleyerek gönder
+    const odalar = await Oda.find({}, '-sifre');
     res.status(200).json(odalar);
   } catch (err) { res.status(500).json({ hata: "Odalar yüklenemedi." }); }
 });
 
-// YENİ: Oda Oluştur
 app.post('/api/oda-olustur', async (req, res) => {
   try {
     const { isim, tip, sifre, olusturan } = req.body;
@@ -79,21 +86,17 @@ app.post('/api/oda-olustur', async (req, res) => {
     if (varMi) return res.status(400).json({ hata: "Bu isimde bir oda zaten var." });
 
     let kaydedilecekSifre = null;
-    if (tip === 'private' && sifre) {
-      kaydedilecekSifre = await bcrypt.hash(sifre, 10);
-    }
+    if (tip === 'private' && sifre) kaydedilecekSifre = await bcrypt.hash(sifre, 10);
 
     const yeniOda = new Oda({ isim, tip, sifre: kaydedilecekSifre, olusturan });
     await yeniOda.save();
     
-    // Tüm kullanıcılara yeni oda eklendiğini haber ver
     const guncelOdalar = await Oda.find({}, '-sifre');
     io.emit('odalar_guncellendi', guncelOdalar);
     res.status(201).json({ mesaj: "Oda oluşturuldu!" });
   } catch (err) { res.status(500).json({ hata: "Oda oluşturulamadı." }); }
 });
 
-// YENİ: Şifreli Odaya Giriş Kontrolü
 app.post('/api/oda-giris', async (req, res) => {
   try {
     const { isim, sifre } = req.body;
@@ -106,38 +109,30 @@ app.post('/api/oda-giris', async (req, res) => {
   } catch (err) { res.status(500).json({ hata: "Sunucu hatası." }); }
 });
 
-
 // -- SOKET ALTYAPISI --
 const mesajGecmisi = { 'genel-sohbet': [], 'yazilim': [], 'oyun-odasi': [], 'muzik': [] };
 const aktifKullanicilar = {}; 
-const sestekiKullanicilar = {}; // YENİ: Sestekileri takip objesi
+const sestekiKullanicilar = {}; 
 
 const kullaniciListesiniGuncelle = (kanalAdi) => {
     const kanaldakiler = Object.values(aktifKullanicilar).filter(k => k.kanal === kanalAdi);
     io.to(kanalAdi).emit('kullanici_listesi', kanaldakiler);
 };
-
-const sestekileriYayinla = () => {
-    io.emit('sesteki_kullanicilar', Object.values(sestekiKullanicilar));
-};
+const sestekileriYayinla = () => io.emit('sesteki_kullanicilar', Object.values(sestekiKullanicilar));
 
 io.on('connection', (socket) => {
     socket.on('kanala_katil', (veri) => {
         const { kanalAdi, kullaniciBilgisi } = veri;
         const eskiKanal = aktifKullanicilar[socket.id]?.kanal;
         Array.from(socket.rooms).forEach(room => { if (room !== socket.id) socket.leave(room); });
-        
         socket.join(kanalAdi);
         aktifKullanicilar[socket.id] = { ...kullaniciBilgisi, id: socket.id, kanal: kanalAdi };
-
         if (eskiKanal && eskiKanal !== kanalAdi) kullaniciListesiniGuncelle(eskiKanal);
         kullaniciListesiniGuncelle(kanalAdi);
-
         if (!mesajGecmisi[kanalAdi]) mesajGecmisi[kanalAdi] = [];
         socket.emit('gecmis_mesajlar', mesajGecmisi[kanalAdi]);
     });
 
-    // YENİ: Sesli Kanala Katılma (Artık kullanıcı bilgilerini de alıyor)
     socket.on('sesli_kanala_katil', ({ kanalAdi, kullaniciBilgisi }) => {
         socket.join(kanalAdi + "_ses"); 
         sestekiKullanicilar[socket.id] = { ...kullaniciBilgisi, kanal: kanalAdi, socketId: socket.id };
@@ -145,7 +140,6 @@ io.on('connection', (socket) => {
         socket.to(kanalAdi + "_ses").emit('yeni_kullanici_ses_kanalinda', socket.id);
     });
 
-    // YENİ: Sesten Ayrılma
     socket.on('sesli_kanaldan_ayril', (kanalAdi) => {
         socket.leave(kanalAdi + "_ses");
         delete sestekiKullanicilar[socket.id];
@@ -157,11 +151,25 @@ io.on('connection', (socket) => {
     socket.on('ses_cevabi', (data) => io.to(data.hedef).emit('ses_cevabi', { sdp: data.sdp, gonderen: socket.id }));
     socket.on('ice_adayi', (data) => io.to(data.hedef).emit('ice_adayi', { aday: data.aday, gonderen: socket.id }));
 
+    // YENİ: Yazıyor Sensörleri
+    socket.on('yaziyor', ({ kanal, kullaniciAdi }) => socket.to(kanal).emit('kullanici_yaziyor', kullaniciAdi));
+    socket.on('yazmayi_birakti', ({ kanal, kullaniciAdi }) => socket.to(kanal).emit('kullanici_yazmayi_birakti', kullaniciAdi));
+
+    // GÜNCELLENDİ: Mesaj Gönderimi (ID Ataması)
     socket.on('mesaj_gonder', (data) => {
+        data.mesajId = Date.now().toString() + Math.random().toString(36).substr(2, 5); // Benzersiz ID
         if (!mesajGecmisi[data.kanal]) mesajGecmisi[data.kanal] = [];
         mesajGecmisi[data.kanal].push(data);
-        if (mesajGecmisi[data.kanal].length > 50) mesajGecmisi[data.kanal].shift();
+        if (mesajGecmisi[data.kanal].length > 100) mesajGecmisi[data.kanal].shift();
         io.to(data.kanal).emit('mesaj_al', data);
+    });
+
+    // YENİ: Mesaj Silme İşlemi
+    socket.on('mesaj_sil', ({ kanal, mesajId }) => {
+        if(mesajGecmisi[kanal]) {
+            mesajGecmisi[kanal] = mesajGecmisi[kanal].filter(m => m.mesajId !== mesajId);
+            io.to(kanal).emit('mesaj_silindi', mesajId);
+        }
     });
 
     socket.on('disconnect', () => {
