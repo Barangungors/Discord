@@ -23,7 +23,7 @@ function App() {
   const [girisYapildi, setGirisYapildi] = useState(false);
   const [ayarlarAcik, setAyarlarAcik] = useState(false);
   const [kullaniciDurumu, setKullaniciDurumu] = useState('Çevrimiçi');
-  const [avatarRenk, setAvatarRenk] = useState('#5865F2'); // Default Discord Rengi
+  const [avatarRenk, setAvatarRenk] = useState('#5865F2'); 
   const [avatarResmi, setAvatarResmi] = useState('');
 
   const [aktifKanal, setAktifKanal] = useState(METIN_KANALLARI[0]);
@@ -190,7 +190,20 @@ function App() {
   useEffect(() => { mesajlarSonuRef.current?.scrollIntoView({ behavior: "smooth" }); }, [mesajListesi]);
 
   const sesliKanalaTikla = (kanalIsmi, kanalTipi = 'public') => { if (aktifSesKanalı === kanalIsmi) return; if (kanalTipi === 'private') setGirisSifreModali({ acik: true, odaIsmi: kanalIsmi }); else sesliKanalaBaglanIcraat(kanalIsmi); };
-  const sesliKanalaBaglanIcraat = async (kanal) => { try { if (aktifSesKanalı) sesliKanaldanAyril(); const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); medyaAkisiRef.current = stream; setAktifSesKanali(kanal); setMikrofonAcik(true); sesSeviyesiDinle(stream, socket.id); socket.emit('sesli_kanala_katil', { kanalAdi: kanal, kullaniciBilgisi: { kullaniciAdi, renk: avatarRenk, avatarResmi } }); SES_BAGLANDI.play(); } catch (err) { alert("Mikrofon izni verilmedi!"); } };
+  
+  const sesliKanalaBaglanIcraat = async (kanal) => { 
+    try { 
+      if (aktifSesKanalı) sesliKanaldanAyril(); 
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); 
+      medyaAkisiRef.current = stream; 
+      setAktifSesKanali(kanal); 
+      setMikrofonAcik(true); 
+      sesSeviyesiDinle(stream, socket.id); 
+      socket.emit('sesli_kanala_katil', { kanalAdi: kanal, kullaniciBilgisi: { kullaniciAdi, renk: avatarRenk, avatarResmi } }); 
+      SES_BAGLANDI.play(); 
+    } catch (err) { alert("Mikrofon izni verilmedi!"); } 
+  };
+  
   const sesliKanaldanAyril = () => {
     if (medyaAkisiRef.current) { medyaAkisiRef.current.getTracks().forEach(t => t.stop()); medyaAkisiRef.current = null; }
     if (ekranAkisiRef.current) { ekranAkisiRef.current.getTracks().forEach(t => t.stop()); ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); }
@@ -198,7 +211,14 @@ function App() {
     peerBaglantilari.current = {}; sesFrekansDurdurucular.current = {}; setUzakSesler([]); setKonusanlar([]);
     socket.emit('sesli_kanaldan_ayril', aktifSesKanalı); setAktifSesKanali(null); setMikrofonAcik(false); SES_AYRILDI.play(); 
   };
-  const mikrofonuGecisYap = () => { if (medyaAkisiRef.current) { const track = medyaAkisiRef.current.getAudioTracks()[0]; track.enabled = !track.enabled; setMikrofonAcik(track.enabled); } };
+  
+  const mikrofonuGecisYap = () => { 
+    if (medyaAkisiRef.current) { 
+      const track = medyaAkisiRef.current.getAudioTracks()[0]; 
+      track.enabled = !track.enabled; 
+      setMikrofonAcik(track.enabled); 
+    } 
+  };
   
   const ekranPaylasiminiDegistir = async () => {
     if (ekranPaylasiliyor) {
@@ -425,13 +445,29 @@ function App() {
           ))}
         </div>
 
+        {/* --- GÜNCELLENEN SES KONTROL PANELİ --- */}
         {aktifSesKanalı && (
           <div className="voice-control-panel-discord">
             <div className="voice-status-discord">
-              <span style={{color:'#23a559', fontWeight:'600'}}>Ses Bağlantısı Kuruldu</span>
-              <span style={{fontSize:'12px', color:'#b5bac1'}}>{aktifSesKanalı}</span>
+              <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
+                 <div className={`pulse-dot-discord ${konusanlar.includes(socket.id) ? 'speaking-pulse' : ''}`}></div>
+                 <span style={{color:'#23a559', fontWeight:'600', fontSize: '13px'}}>Ses Bağlantısı</span>
+              </div>
+              <span style={{fontSize:'12px', color:'#b5bac1', marginLeft: '14px'}}>{aktifSesKanalı}</span>
             </div>
-            <div className="disconnect-btn-discord" onClick={sesliKanaldanAyril} title="Bağlantıyı Kes">📞</div>
+            
+            {/* EKLENEN MİKROFON, EKRAN PAYLAŞIMI VE ÇIKIŞ BUTONLARI */}
+            <div className="voice-actions-discord">
+              <button className={`action-icon-discord ${!mikrofonAcik ? 'muted' : ''}`} onClick={mikrofonuGecisYap} title={mikrofonAcik ? "Sesi Kapat" : "Sesi Aç"}>
+                {mikrofonAcik ? '🎙️' : '🔇'}
+              </button>
+              <button className={`action-icon-discord ${ekranPaylasiliyor ? 'active' : ''}`} onClick={ekranPaylasiminiDegistir} title={ekranPaylasiliyor ? "Ekran Paylaşımını Kapat" : "Ekran Paylaş"}>
+                🖥️
+              </button>
+              <button className="action-icon-discord disconnect" onClick={sesliKanaldanAyril} title="Bağlantıyı Kes">
+                📞
+              </button>
+            </div>
           </div>
         )}
 
@@ -471,10 +507,8 @@ function App() {
               <p>Bu, #{aktifKanal} kanalının başlangıcıdır.</p>
             </div>
           ) : (
-            // YENİ: MESAJ GRUPLAMA MANTIĞI
             mesajListesi.map((m, index) => {
               const oncekiMesaj = index > 0 ? mesajListesi[index - 1] : null;
-              // Eğer önceki mesajla aynı kişi atıyorsa ve arada dosya tipi farkı vb aşırı durum yoksa grupla
               const ayniKisi = oncekiMesaj && oncekiMesaj.kullaniciAdi === m.kullaniciAdi;
 
               return (
