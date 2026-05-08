@@ -16,7 +16,7 @@
   --input-bg: #383a40;
   --modifier-hover: rgba(255, 255, 255, 0.02);
   --modifier-active: rgba(255, 255, 255, 0.03);
-  --danger: #f23f43;s
+  --danger: #f23f43;
 }
 
 * {
@@ -37,31 +37,15 @@ body {
 ::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 4px; }
 
 /* -- GİRİŞ EKRANI -- */
-.discord-bg {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-image: url('https://theme.zdassets.com/theme_assets/678183/b7e9dce75f9edb23504e13b4699e208f28dacb29.jpg');
-  background-size: cover;
-  background-position: center;
-}
-
-.discord-panel {
-  background-color: var(--bg-primary);
-  padding: 32px;
-  border-radius: 5px;
-  width: 480px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  text-align: center;
-}
-
+.discord-bg { height: 100vh; display: flex; justify-content: center; align-items: center; background-image: url('https://theme.zdassets.com/theme_assets/678183/b7e9dce75f9edb23504e13b4699e208f28dacb29.jpg'); background-size: cover; background-position: center; }
+.discord-panel { background-color: var(--bg-primary); padding: 32px; border-radius: 5px; width: 480px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); text-align: center; }
 .discord-logo { font-weight: 800; font-size: 24px; margin-bottom: 20px; color: #fff; }
 
 .input-group { text-align: left; margin-bottom: 10px; }
 .input-group label { display: block; font-size: 12px; font-weight: 700; color: var(--header-secondary); margin-bottom: 8px; }
 .input-group input, .discord-select { width: 100%; padding: 10px; background-color: var(--bg-tertiary); border: 1px solid transparent; border-radius: 3px; color: var(--text-normal); font-size: 16px; outline: none; transition: border 0.2s; }
 .input-group input:focus { border-color: var(--brand-color); }
+.color-picker-discord { height: 40px; cursor: pointer; padding: 2px !important; }
 
 .discord-button { width: 100%; padding: 10px 16px; border: none; border-radius: 3px; color: white; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.2s; }
 .blurple-btn { background-color: var(--brand-color); }
@@ -128,7 +112,7 @@ body {
 .message-discord:hover { background-color: var(--modifier-hover); }
 .message-discord.grouped { margin-top: 0; padding-top: 2px; padding-bottom: 2px; }
 .message-avatar-discord { position: absolute; left: 16px; top: 2px; width: 40px; height: 40px; border-radius: 50%; }
-.message-content-discord { flex: 1; }
+.message-content-discord { flex: 1; width: 100%;}
 .message-header-discord { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
 .message-username-discord { font-size: 16px; font-weight: 500; cursor: pointer; }
 .message-username-discord:hover { text-decoration: underline; }
@@ -138,8 +122,8 @@ body {
 .message-text-discord { font-size: 16px; line-height: 1.375; color: var(--text-normal); word-break: break-word; }
 
 .chat-image, .chat-video { max-width: 400px; max-height: 300px; border-radius: 8px; margin-top: 4px; }
-.message-actions-discord { position: absolute; right: 16px; top: -10px; background-color: var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius: 4px; display: none; padding: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
-.message-discord:hover .message-actions-discord { display: flex; }
+.message-actions-discord { position: absolute; right: 16px; top: -10px; background-color: var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius: 4px; display: none; padding: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.2); z-index: 10;}
+.message-discord:hover .message-actions-discord { display: flex; gap: 4px; }
 .action-btn { cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; }
 .action-btn:hover { background-color: var(--modifier-active); color: var(--danger); }
 
@@ -182,350 +166,54 @@ body {
 .video-label-discord { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
 .live-badge { background: var(--danger); }
 .nested-avatars { padding-left: 28px; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
-.nested-user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
+.nested-user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); cursor: pointer; }
+.nested-user:hover { color: var(--text-normal); }
 .nested-avatar { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; }
 .speaking-discord { border-color: #23a559 !important; box-shadow: 0 0 0 2px rgba(35, 165, 89, 0.3) !important; }
-/* --- YENİ: MESAJ YANITLAMA (REPLY) STİLLERİ --- */
 
-.message-discord {
-  /* Eğik çizgi referansı için position ayarını garantile */
-  position: relative;
-}
-
-.replied-message-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  margin-top: -4px;
-  position: relative;
-  user-select: none;
-  cursor: pointer;
-}
-
-.replied-message-wrapper:hover {
-  color: var(--text-normal);
-}
-
-/* O Meşhur Eğimli Çizgi (Discord Reply Spine) */
-.reply-spine {
-  position: absolute;
-  left: -32px;
-  top: 50%;
-  width: 28px;
-  height: 12px;
-  border-left: 2px solid #4f545c;
-  border-top: 2px solid #4f545c;
-  border-top-left-radius: 6px;
-}
-
-.replied-avatar {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-}
-
-.replied-username {
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.replied-text {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-width: 400px;
-}
-
-/* Yanıt Yazma (Input) Bildirimi */
-.reply-banner {
-  background-color: var(--bg-secondary);
-  padding: 8px 16px;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.reply-active {
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
-}
-
-.cancel-reply {
-  cursor: pointer;
-  color: var(--header-secondary);
-  font-size: 10px;
-}
+/* YANITLAMA (REPLY) */
+.replied-message-wrapper { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; margin-top: -4px; position: relative; user-select: none; cursor: pointer; }
+.replied-message-wrapper:hover { color: var(--text-normal); }
+.reply-spine { position: absolute; left: -32px; top: 50%; width: 28px; height: 12px; border-left: 2px solid #4f545c; border-top: 2px solid #4f545c; border-top-left-radius: 6px; }
+.replied-avatar { width: 16px; height: 16px; border-radius: 50%; }
+.replied-username { font-weight: 600; opacity: 0.8; }
+.replied-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 400px; }
+.reply-banner { background-color: var(--bg-secondary); padding: 8px 16px; border-top-left-radius: 8px; border-top-right-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); }
+.reply-active { border-top-left-radius: 0 !important; border-top-right-radius: 0 !important; }
+.cancel-reply { cursor: pointer; color: var(--header-secondary); font-size: 10px; padding: 4px;}
 .cancel-reply:hover { color: var(--danger); }
+.highlight-reply { background-color: rgba(88, 101, 242, 0.1); }
 
+/* MARKDOWN */
+.inline-code { background-color: #1e1f22; padding: 2px 4px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 14px; }
+.mention { background-color: rgba(88, 101, 242, 0.3); color: #c9cdfb; padding: 0 2px; border-radius: 3px; cursor: pointer; font-weight: 500; transition: 0.1s; }
+.mention:hover { background-color: var(--brand-color); color: white; }
 
-/* --- YENİ: MARKDOWN (METİN FORMATLAMA) STİLLERİ --- */
-.inline-code {
-  background-color: #1e1f22;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-}
+/* MENTIONS EFEKTİ */
+.mentioned-message { background-color: rgba(250, 166, 26, 0.1) !important; border-left: 3px solid #faa61a; }
+.mentioned-message:hover { background-color: rgba(250, 166, 26, 0.15) !important; }
 
-.mention {
-  background-color: rgba(88, 101, 242, 0.3);
-  color: #c9cdfb;
-  padding: 0 2px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.1s;
-}
+/* EMOJİ MENÜSÜ */
+.emoji-picker-discord { position: absolute; bottom: 60px; right: 16px; width: 320px; background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 100; overflow: hidden; }
+.emoji-picker-header { padding: 12px 16px; background-color: var(--bg-tertiary); font-size: 14px; font-weight: 700; color: var(--header-primary); border-bottom: 1px solid rgba(0,0,0,0.2); }
+.emoji-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; max-height: 200px; overflow-y: auto; }
+.emoji-item { font-size: 24px; cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.1s; }
+.emoji-item:hover { background-color: var(--modifier-hover); transform: scale(1.2); }
 
-.mention:hover {
-  background-color: var(--brand-color);
-  color: white;
-}
+/* PROFİL POPOUT KARTI */
+.profile-popout-discord { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background-color: #232428; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+.profile-popout-banner { height: 120px; width: 100%; }
+.profile-popout-avatar-wrapper { position: absolute; top: 76px; left: 16px; width: 92px; height: 92px; border-radius: 50%; background-color: #232428; padding: 6px; }
+.profile-popout-avatar { width: 100%; height: 100%; border-radius: 50%; }
+.profile-popout-status { width: 16px; height: 16px; border-radius: 50%; position: absolute; bottom: 4px; right: 4px; border: 3px solid #232428; }
+.profile-popout-info { padding: 56px 16px 16px 16px; background-color: #111214; margin: 16px; border-radius: 8px; }
+.profile-popout-info h3 { font-size: 20px; color: var(--header-primary); margin-bottom: 4px; }
+.profile-popout-info p { font-size: 14px; color: var(--text-normal); }
+.profile-popout-divider { height: 1px; background-color: rgba(255,255,255,0.1); margin: 12px 0; }
+.profile-popout-info h4 { font-size: 11px; font-weight: 700; color: var(--header-secondary); margin-bottom: 8px; }
+.profile-popout-role { background-color: rgba(88, 101, 242, 0.2); color: #c9cdfb; font-size: 12px; padding: 4px 8px; border-radius: 4px; display: inline-block; border: 1px solid rgba(88, 101, 242, 0.5); }
 
-/* --- YENİ: MESAJ YANITLAMA (REPLY) STİLLERİ --- */
-
-.message-discord {
-  /* Eğik çizgi referansı için position ayarını garantile */
-  position: relative;
-}
-
-.replied-message-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  margin-top: -4px;
-  position: relative;
-  user-select: none;
-  cursor: pointer;
-}
-
-.replied-message-wrapper:hover {
-  color: var(--text-normal);
-}
-
-/* O Meşhur Eğimli Çizgi (Discord Reply Spine) */
-.reply-spine {
-  position: absolute;
-  left: -32px;
-  top: 50%;
-  width: 28px;
-  height: 12px;
-  border-left: 2px solid #4f545c;
-  border-top: 2px solid #4f545c;
-  border-top-left-radius: 6px;
-}
-
-.replied-avatar {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-}
-
-.replied-username {
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.replied-text {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-width: 400px;
-}
-
-/* Yanıt Yazma (Input) Bildirimi */
-.reply-banner {
-  background-color: var(--bg-secondary);
-  padding: 8px 16px;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.reply-active {
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
-}
-
-.cancel-reply {
-  cursor: pointer;
-  color: var(--header-secondary);
-  font-size: 10px;
-}
-.cancel-reply:hover { color: var(--danger); }
-
-
-/* --- YENİ: MARKDOWN (METİN FORMATLAMA) STİLLERİ --- */
-.inline-code {
-  background-color: #1e1f22;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-}
-
-.mention {
-  background-color: rgba(88, 101, 242, 0.3);
-  color: #c9cdfb;
-  padding: 0 2px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.1s;
-}
-
-.mention:hover {
-  background-color: var(--brand-color);
-  color: white;
-}
-
-/* --- YENİ GÜNCELLEMELER: PROFİL, EMOJİ VE MENTIONS --- */
-
-/* Mesaj İçinde Etiketlenme Efekti (Sarı Arkaplan) */
-.mentioned-message {
-  background-color: rgba(250, 166, 26, 0.1) !important;
-  border-left: 3px solid #faa61a;
-}
-.mentioned-message:hover {
-  background-color: rgba(250, 166, 26, 0.15) !important;
-}
-
-/* Emoji Seçici Menüsü */
-.emoji-picker-discord {
-  position: absolute;
-  bottom: 60px;
-  right: 16px;
-  width: 320px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--bg-tertiary);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  z-index: 100;
-  overflow: hidden;
-}
-.emoji-picker-header {
-  padding: 12px 16px;
-  background-color: var(--bg-tertiary);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--header-primary);
-  border-bottom: 1px solid rgba(0,0,0,0.2);
-}
-.emoji-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-.emoji-item {
-  font-size: 24px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: 0.1s;
-}
-.emoji-item:hover {
-  background-color: var(--modifier-hover);
-  transform: scale(1.2);
-}
-
-/* Kullanıcı Profil Kartı (Popout) */
-.profile-popout-discord {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 300px;
-  background-color: #232428;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  z-index: 1000;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-.profile-popout-banner {
-  height: 120px;
-  width: 100%;
-}
-.profile-popout-avatar-wrapper {
-  position: absolute;
-  top: 76px;
-  left: 16px;
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  background-color: #232428;
-  padding: 6px;
-}
-.profile-popout-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
-.profile-popout-status {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  border: 3px solid #232428;
-}
-.profile-popout-info {
-  padding: 56px 16px 16px 16px;
-  background-color: #111214;
-  margin: 16px;
-  border-radius: 8px;
-}
-.profile-popout-info h3 {
-  font-size: 20px;
-  color: var(--header-primary);
-  margin-bottom: 4px;
-}
-.profile-popout-info p {
-  font-size: 14px;
-  color: var(--text-normal);
-}
-.profile-popout-divider {
-  height: 1px;
-  background-color: rgba(255,255,255,0.1);
-  margin: 12px 0;
-}
-.profile-popout-info h4 {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--header-secondary);
-  margin-bottom: 8px;
-}
-.profile-popout-role {
-  background-color: rgba(88, 101, 242, 0.2);
-  color: #c9cdfb;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  display: inline-block;
-  border: 1px solid rgba(88, 101, 242, 0.5);
-}
-
-.clickable {
-  cursor: pointer;
-}
-.clickable:hover {
-  opacity: 0.8;
-}
+.clickable { cursor: pointer; }
+.clickable:hover { opacity: 0.8; }
+.animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
