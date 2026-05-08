@@ -217,3 +217,116 @@ body {
 .clickable:hover { opacity: 0.8; }
 .animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* --- YENİ: ULTRA MAX EFEKTLER --- */
+
+/* GIF Menüsü */
+.gif-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.gif-item {
+  width: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.gif-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* Ses Paneli (Soundboard) */
+.soundboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px;
+}
+.soundboard-btn {
+  background-color: var(--bg-tertiary);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: 0.1s;
+}
+.soundboard-btn:hover {
+  background-color: var(--brand-color);
+  transform: translateY(-2px);
+}
+.sb-icon { font-size: 24px; }
+.sb-text { font-size: 14px; font-weight: 600; color: white; }
+
+/* Chat İçinde Çalan Ses Mesajı (Pill) */
+.soundboard-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(88, 101, 242, 0.15);
+  border: 1px solid rgba(88, 101, 242, 0.5);
+  padding: 8px 12px;
+  border-radius: 20px;
+  color: #dbdee1;
+  font-size: 14px;
+}
+.soundboard-msg strong { color: white; }
+.sb-name { color: #00a8fc; font-weight: bold; }
+
+/* Slash (/) Komutları Öneri Paneli */
+.command-popup {
+  position: absolute;
+  bottom: 60px;
+  left: 16px;
+  width: 400px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+.command-header {
+  padding: 12px 16px;
+  background-color: var(--bg-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--header-secondary);
+  text-transform: uppercase;
+}
+.command-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.command-item:hover {
+  background-color: var(--modifier-hover);
+}
+.command-item strong { color: var(--text-normal); font-size: 16px; }
+.command-item span { color: var(--text-muted); font-size: 14px; }
+
+/* Buton Tipi İkonlar (GIF, Ses) */
+.text-icon {
+  font-family: 'Noto Sans', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  background-color: var(--bg-tertiary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.text-icon:hover {
+  background-color: var(--text-muted);
+  color: var(--bg-primary);
+}
