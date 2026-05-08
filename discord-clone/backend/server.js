@@ -18,13 +18,12 @@ mongoose.connect(mongoURI)
   .then(() => console.log('📦 MongoDB Veritabanına Başarıyla Bağlanıldı!'))
   .catch((err) => console.log('❌ MongoDB Bağlantı Hatası:', err));
 
-// --- ŞEMALAR ---
 const kullaniciSemasi = new mongoose.Schema({
   kullaniciAdi: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   sifre: { type: String, required: true },
-  avatarRenk: { type: String, default: '#00f3ff' },
-  avatarResmi: { type: String, default: '' } // YENİ: Profil Fotoğrafı Linki
+  avatarRenk: { type: String, default: '#5865F2' },
+  avatarResmi: { type: String, default: '' } 
 });
 const Kullanici = mongoose.model('Kullanici', kullaniciSemasi);
 
@@ -36,7 +35,6 @@ const odaSemasi = new mongoose.Schema({
 });
 const Oda = mongoose.model('Oda', odaSemasi);
 
-// --- API ROTALARI ---
 app.post('/api/kayit', async (req, res) => {
   try {
     const { kullaniciAdi, email, sifre } = req.body;
@@ -63,7 +61,6 @@ app.post('/api/giris', async (req, res) => {
   } catch (err) { res.status(500).json({ hata: "Sunucu hatası." }); }
 });
 
-// YENİ: Profil Fotoğrafı Güncelleme
 app.post('/api/avatar-guncelle', async (req, res) => {
   try {
     const { email, avatarResmi } = req.body;
@@ -109,7 +106,6 @@ app.post('/api/oda-giris', async (req, res) => {
   } catch (err) { res.status(500).json({ hata: "Sunucu hatası." }); }
 });
 
-// -- SOKET ALTYAPISI --
 const mesajGecmisi = { 'genel-sohbet': [], 'yazilim': [], 'oyun-odasi': [], 'muzik': [] };
 const aktifKullanicilar = {}; 
 const sestekiKullanicilar = {}; 
@@ -151,25 +147,28 @@ io.on('connection', (socket) => {
     socket.on('ses_cevabi', (data) => io.to(data.hedef).emit('ses_cevabi', { sdp: data.sdp, gonderen: socket.id }));
     socket.on('ice_adayi', (data) => io.to(data.hedef).emit('ice_adayi', { aday: data.aday, gonderen: socket.id }));
 
-    // YENİ: Yazıyor Sensörleri
     socket.on('yaziyor', ({ kanal, kullaniciAdi }) => socket.to(kanal).emit('kullanici_yaziyor', kullaniciAdi));
     socket.on('yazmayi_birakti', ({ kanal, kullaniciAdi }) => socket.to(kanal).emit('kullanici_yazmayi_birakti', kullaniciAdi));
 
-    // GÜNCELLENDİ: Mesaj Gönderimi (ID Ataması)
     socket.on('mesaj_gonder', (data) => {
-        data.mesajId = Date.now().toString() + Math.random().toString(36).substr(2, 5); // Benzersiz ID
+        data.mesajId = Date.now().toString() + Math.random().toString(36).substr(2, 5); 
         if (!mesajGecmisi[data.kanal]) mesajGecmisi[data.kanal] = [];
         mesajGecmisi[data.kanal].push(data);
         if (mesajGecmisi[data.kanal].length > 100) mesajGecmisi[data.kanal].shift();
         io.to(data.kanal).emit('mesaj_al', data);
     });
 
-    // YENİ: Mesaj Silme İşlemi
     socket.on('mesaj_sil', ({ kanal, mesajId }) => {
         if(mesajGecmisi[kanal]) {
             mesajGecmisi[kanal] = mesajGecmisi[kanal].filter(m => m.mesajId !== mesajId);
             io.to(kanal).emit('mesaj_silindi', mesajId);
         }
+    });
+
+    // YENİ: HAYALET SES SİSTEMİ (Sohbete yansımadan sadece anlık ses çaldırır)
+    socket.on('ses_cal_gizli', (data) => {
+        // Bunu mesaj geçmişine KAYDETMİYORUZ! Sadece anlık olarak odadakilere iletiyoruz.
+        io.to(data.kanal).emit('ses_calindi_gizli', data.url);
     });
 
     socket.on('disconnect', () => {
