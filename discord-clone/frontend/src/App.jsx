@@ -10,12 +10,38 @@ const SABIT_SES_KANALLARI = ['Lobi', 'Oyun Ses', 'Sohbet Odası'];
 
 const SES_BAGLANDI = new Audio('https://actions.google.com/sounds/v1/ui/communication_channel_open.ogg');
 const SES_AYRILDI = new Audio('https://actions.google.com/sounds/v1/ui/communication_channel_close.ogg');
-// YENİ: Etiketlenme (Ping) Sesi
 const SES_PING = new Audio('https://actions.google.com/sounds/v1/alarms/pop_up.ogg');
 SES_BAGLANDI.volume = 0.5; SES_AYRILDI.volume = 0.5; SES_PING.volume = 0.7;
 
-// YENİ: Emoji Listesi
 const POPULER_EMOJILER = ['😀','😂','😍','😎','😭','😡','👍','🔥','❤️','🎉','✨','💀','👀','🤔','💯','🙌','👏','🤦‍♂️','😘','😁'];
+
+// YENİ: Ses Paneli (Soundboard) Dosyaları
+const SOUNDBOARD_SESLERI = [
+  { id: 'airhorn', isim: 'Airhorn', ikon: '📢', url: 'https://www.myinstants.com/media/sounds/mlg-airhorn.mp3' },
+  { id: 'vineboom', isim: 'Vine Boom', ikon: '💥', url: 'https://www.myinstants.com/media/sounds/vine-boom.mp3' },
+  { id: 'cricket', isim: 'Cırcır Böceği', ikon: '🦗', url: 'https://www.myinstants.com/media/sounds/crickets.mp3' },
+  { id: 'sadtrombone', isim: 'Sad Trombone', ikon: '🎺', url: 'https://www.myinstants.com/media/sounds/sadtrombone.mp3' },
+  { id: 'anime-wow', isim: 'Anime Wow', ikon: '😲', url: 'https://www.myinstants.com/media/sounds/anime-wow-sound-effect.mp3' },
+  { id: 'dun-dun', isim: 'Ba Dum Tss', ikon: '🥁', url: 'https://www.myinstants.com/media/sounds/ba-dum-tsss.mp3' }
+];
+
+// YENİ: GIF Galerisi (Örnek Eğlence Paketleri)
+const POPULER_GIFLER = [
+  'https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif', // Wow
+  'https://media.giphy.com/media/11ISwbgCxEzMyY/giphy.gif', // Laugh
+  'https://media.giphy.com/media/26n6WywFabVv1k8aI/giphy.gif', // Popcorn
+  'https://media.giphy.com/media/yYSSBtDgbbRzq/giphy.gif', // Mind Blown
+  'https://media.giphy.com/media/Is1O1TWV0IGyI/giphy.gif', // Sad
+  'https://media.giphy.com/media/TdfyKrN7HGTIY/giphy.gif', // Thinking
+  'https://media.giphy.com/media/ZfK4cXKJTTay1Ava29/giphy.gif', // Hello
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcG56bWV5aDczNThveHpxZDBxYW5yZDUzaXo1emVtd2tueHVjZDBweiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LAKIIRqtM1dqE/giphy.gif', // Cat typing
+];
+
+// YENİ: Slash Komutları
+const KOMUTLAR = [
+  { komut: '/zar', aciklama: '1 ile 6 arasında rastgele zar atar.' },
+  { komut: '/yazitura', aciklama: 'Yazı mı tura mı atar.' }
+];
 
 function App() {
   const [kayitModu, setKayitModu] = useState(false); 
@@ -47,9 +73,11 @@ function App() {
   const [konusanlar, setKonusanlar] = useState([]); 
   const [ozelOdalar, setOzelOdalar] = useState([]);
   
-  // YENİ STATE'LER: Emoji ve Profil Kartı
   const [emojiMenuAcik, setEmojiMenuAcik] = useState(false);
+  const [gifMenuAcik, setGifMenuAcik] = useState(false);
+  const [sesPaneliAcik, setSesPaneliAcik] = useState(false);
   const [seciliProfil, setSeciliProfil] = useState(null);
+  const [komutOnerisi, setKomutOnerisi] = useState(false);
 
   const [medyaYukleniyor, setMedyaYukleniyor] = useState(false);
   const [ekranPaylasiliyor, setEkranPaylasiliyor] = useState(false);
@@ -128,14 +156,21 @@ function App() {
   useEffect(() => {
     if (girisYapildi) {
       socket.emit('kanala_katil', { kanalAdi: aktifKanal, kullaniciBilgisi: { kullaniciAdi, durum: kullaniciDurumu, renk: avatarRenk, avatarResmi } });
-      setMesajListesi([]); setYazanKullanicilar([]); setYanitlananMesaj(null); setEmojiMenuAcik(false); setSeciliProfil(null);
+      setMesajListesi([]); setYazanKullanicilar([]); setYanitlananMesaj(null); setEmojiMenuAcik(false); setGifMenuAcik(false); setSesPaneliAcik(false); setSeciliProfil(null); setKomutOnerisi(false);
     }
   }, [aktifKanal, girisYapildi, kullaniciDurumu, avatarRenk, avatarResmi]);
 
   useEffect(() => {
     socket.on('mesaj_al', (data) => {
       setMesajListesi((eski) => [...eski, data]);
-      // YENİ: Eğer gelen mesajda bizden bahsediliyorsa SES ÇAL
+      
+      // YENİ: Canlı Ses Efekti Oynatıcı (Soundboard)
+      if (data.dosyaTipi === 'sound') {
+        const calinacakSes = new Audio(data.metin);
+        calinacakSes.volume = 0.6;
+        calinacakSes.play().catch(e => console.log(e));
+      }
+
       if (data.dosyaTipi === 'text' && data.metin.includes(`@${kullaniciAdi}`) && data.kullaniciAdi !== kullaniciAdi) {
         SES_PING.play().catch(e => console.log(e));
       }
@@ -149,9 +184,8 @@ function App() {
     socket.on('mesaj_silindi', (id) => setMesajListesi(p => p.filter(m => m.mesajId !== id)));
 
     return () => { socket.off('mesaj_al'); socket.off('gecmis_mesajlar'); socket.off('kullanici_listesi'); socket.off('sesteki_kullanicilar'); socket.off('odalar_guncellendi'); socket.off('kullanici_yaziyor'); socket.off('kullanici_yazmayi_birakti'); socket.off('mesaj_silindi'); };
-  }, [kullaniciAdi]); // kullaniciAdi eklendi çünkü ping kontrolünde kullanıyoruz
+  }, [kullaniciAdi]);
 
-  // WEBRTC ETKİLEŞİMLERİ (Aynı Kaldı)
   useEffect(() => {
     if(!aktifSesKanalı) return;
     const peerOlustur = (hedefID, arayanBenMiyim) => {
@@ -175,31 +209,68 @@ function App() {
 
   useEffect(() => { mesajlarSonuRef.current?.scrollIntoView({ behavior: "smooth" }); }, [mesajListesi]);
 
-  // UI İŞLEMLERİ
   const sesliKanalaTikla = (kanalIsmi, kanalTipi = 'public') => { if (aktifSesKanalı === kanalIsmi) return; if (kanalTipi === 'private') setGirisSifreModali({ acik: true, odaIsmi: kanalIsmi }); else sesliKanalaBaglanIcraat(kanalIsmi); };
   const sesliKanalaBaglanIcraat = async (kanal) => { try { if (aktifSesKanalı) sesliKanaldanAyril(); const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); medyaAkisiRef.current = stream; setAktifSesKanali(kanal); setMikrofonAcik(true); sesSeviyesiDinle(stream, socket.id); socket.emit('sesli_kanala_katil', { kanalAdi: kanal, kullaniciBilgisi: { kullaniciAdi, renk: avatarRenk, avatarResmi } }); SES_BAGLANDI.play(); } catch (err) { alert("Mikrofon izni verilmedi!"); } };
   const sesliKanaldanAyril = () => { if (medyaAkisiRef.current) { medyaAkisiRef.current.getTracks().forEach(t => t.stop()); medyaAkisiRef.current = null; } if (ekranAkisiRef.current) { ekranAkisiRef.current.getTracks().forEach(t => t.stop()); ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); } Object.values(peerBaglantilari.current).forEach(peer => peer.close()); Object.values(sesFrekansDurdurucular.current).forEach(durdur => durdur()); peerBaglantilari.current = {}; sesFrekansDurdurucular.current = {}; setUzakSesler([]); setKonusanlar([]); socket.emit('sesli_kanaldan_ayril', aktifSesKanalı); setAktifSesKanali(null); setMikrofonAcik(false); SES_AYRILDI.play(); };
   const mikrofonuGecisYap = () => { if (medyaAkisiRef.current) { const track = medyaAkisiRef.current.getAudioTracks()[0]; track.enabled = !track.enabled; setMikrofonAcik(track.enabled); } };
   const ekranPaylasiminiDegistir = async () => { if (ekranPaylasiliyor) { if (ekranAkisiRef.current) { ekranAkisiRef.current.getTracks().forEach(t => t.stop()); Object.values(peerBaglantilari.current).forEach(peer => { const senders = peer.getSenders().filter(s => s.track && s.track.kind === 'video'); senders.forEach(s => peer.removeTrack(s)); }); } ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); } else { try { const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); ekranAkisiRef.current = stream; setYerelEkranAkim(stream); setEkranPaylasiliyor(true); stream.getTracks().forEach(track => { Object.values(peerBaglantilari.current).forEach(peer => peer.addTrack(track, stream)); track.onended = () => { ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); Object.values(peerBaglantilari.current).forEach(peer => { const senders = peer.getSenders().filter(s => s.track && s.track.kind === 'video'); senders.forEach(s => peer.removeTrack(s)); }); }; }); } catch(err) { } } };
 
+  // YENİ: Slash Komutlarını Dinle
   const mesajYazimiDegisti = (e) => {
-    setMesaj(e.target.value);
+    const val = e.target.value;
+    setMesaj(val);
+    
+    if (val.startsWith('/')) { setKomutOnerisi(true); } 
+    else { setKomutOnerisi(false); }
+
     socket.emit('yaziyor', { kanal: aktifKanal, kullaniciAdi });
     clearTimeout(yazmaZamanlayici.current);
     yazmaZamanlayici.current = setTimeout(() => { socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); }, 1500);
   };
 
-  // YENİ: Emoji Ekleme
-  const emojiEkle = (emoji) => {
-    setMesaj(prev => prev + emoji);
-    setEmojiMenuAcik(false);
+  const emojiEkle = (emoji) => { setMesaj(prev => prev + emoji); setEmojiMenuAcik(false); };
+  
+  // YENİ: Ses Paneli Tetikleyici
+  const sesCal = (sesObj) => {
+    socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: sesObj.url, sesIsmi: sesObj.isim, ikon: sesObj.ikon, dosyaTipi: 'sound', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi });
+    setSesPaneliAcik(false);
+  };
+
+  // YENİ: GIF Gönderme
+  const gifGonder = (gifUrl) => {
+    socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: gifUrl, dosyaTipi: 'image', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi, yanitlanan: yanitlananMesaj });
+    setGifMenuAcik(false);
+    setYanitlananMesaj(null);
   };
 
   const mesajGonder = () => {
-    if (mesaj.trim() !== '') {
-      socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: mesaj, dosyaTipi: 'text', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi, yanitlanan: yanitlananMesaj });
-      setMesaj(''); setYanitlananMesaj(null); setEmojiMenuAcik(false); socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); 
+    if (mesaj.trim() === '') return;
+
+    let gonderilecekMetin = mesaj;
+    let sistemMesaji = false;
+
+    // YENİ: Eğik Çizgi Komutları Yürütme
+    if (mesaj === '/zar') {
+      const zar = Math.floor(Math.random() * 6) + 1;
+      gonderilecekMetin = `🎲 **${kullaniciAdi}** bir zar attı ve **${zar}** geldi!`;
+      sistemMesaji = true;
+    } else if (mesaj === '/yazitura') {
+      const sonuc = Math.random() > 0.5 ? 'YAZI' : 'TURA';
+      gonderilecekMetin = `🪙 **${kullaniciAdi}** madeni para fırlattı: **${sonuc}!**`;
+      sistemMesaji = true;
     }
+
+    socket.emit('mesaj_gonder', { 
+      id: socket.id, kullaniciAdi: sistemMesaji ? 'NEXUS SİSTEMİ' : kullaniciAdi, 
+      metin: gonderilecekMetin, dosyaTipi: 'text', 
+      saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
+      kanal: aktifKanal, renk: sistemMesaji ? '#ffea00' : avatarRenk, 
+      avatarResmi: sistemMesaji ? 'https://cdn-icons-png.flaticon.com/512/2621/2621111.png' : avatarResmi, 
+      yanitlanan: yanitlananMesaj 
+    });
+    
+    setMesaj(''); setYanitlananMesaj(null); setEmojiMenuAcik(false); setKomutOnerisi(false);
+    socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); 
   };
 
   const medyaYukle = async (e, isAvatar = false) => {
@@ -227,6 +298,15 @@ function App() {
 
   const durumRengiGetir = (durum) => { if(durum === 'Çevrimiçi') return '#23a559'; if(durum === 'Boşta') return '#f0b232'; if(durum === 'Rahatsız Etmeyin') return '#f23f43'; return '#80848e'; };
   const grupluKullanicilar = { 'Çevrimiçi': kanaldakiKullanicilar.filter(k => k.durum === 'Çevrimiçi'), 'Boşta': kanaldakiKullanicilar.filter(k => k.durum === 'Boşta'), 'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin') };
+
+  // EKRANI KAPATAN TIKLAMA YÖNETİCİSİ
+  const arkaPlanaTiklandi = () => {
+    setEmojiMenuAcik(false);
+    setGifMenuAcik(false);
+    setSesPaneliAcik(false);
+    setSeciliProfil(null);
+    setKomutOnerisi(false);
+  };
 
   if (!girisYapildi) {
     return (
@@ -278,9 +358,8 @@ function App() {
   const yayinEkraniAcik = yerelEkranAkim || aktifEkranYayinlari.length > 0;
 
   return (
-    <div className="discord-layout main-theme" onClick={() => { setEmojiMenuAcik(false); setSeciliProfil(null); }}>
+    <div className="discord-layout main-theme" onClick={arkaPlanaTiklandi}>
       
-      {/* YENİ: KULLANICI PROFİL KARTI (POPOUT) */}
       {seciliProfil && (
         <div className="profile-popout-discord animate-fade-in" onClick={(e) => e.stopPropagation()}>
            <div className="profile-popout-banner" style={{backgroundColor: seciliProfil.renk || '#5865F2'}}></div>
@@ -329,25 +408,14 @@ function App() {
         <div className="discord-modal-overlay">
           <div className="discord-modal settings">
             <h2>Kullanıcı Ayarları</h2>
-            <div className="input-group">
-              <label>DURUM</label>
-              <select value={kullaniciDurumu} onChange={(e) => setKullaniciDurumu(e.target.value)} className="discord-select"><option value="Çevrimiçi">Çevrimiçi</option><option value="Boşta">Boşta</option><option value="Rahatsız Etmeyin">Rahatsız Etmeyin</option><option value="Görünmez">Görünmez</option></select>
-            </div>
-            <div className="input-group">
-              <label>PROFİL RENGİ</label>
-              <input type="color" value={avatarRenk} onChange={(e) => setAvatarRenk(e.target.value)} className="color-picker-discord" />
-            </div>
-            <div className="input-group">
-              <label>PROFİL FOTOĞRAFI DEĞİŞTİR</label>
-              <input type="file" accept="image/*" onChange={(e) => medyaYukle(e, true)} disabled={medyaYukleniyor} className="file-input-discord" />
-              {medyaYukleniyor && <span style={{fontSize:'12px', color:'#5865F2'}}>Yükleniyor...</span>}
-            </div>
+            <div className="input-group"><label>DURUM</label><select value={kullaniciDurumu} onChange={(e) => setKullaniciDurumu(e.target.value)} className="discord-select"><option value="Çevrimiçi">Çevrimiçi</option><option value="Boşta">Boşta</option><option value="Rahatsız Etmeyin">Rahatsız Etmeyin</option><option value="Görünmez">Görünmez</option></select></div>
+            <div className="input-group"><label>PROFİL RENGİ</label><input type="color" value={avatarRenk} onChange={(e) => setAvatarRenk(e.target.value)} className="color-picker-discord" /></div>
+            <div className="input-group"><label>PROFİL FOTOĞRAFI DEĞİŞTİR</label><input type="file" accept="image/*" onChange={(e) => medyaYukle(e, true)} disabled={medyaYukleniyor} className="file-input-discord" />{medyaYukleniyor && <span style={{fontSize:'12px', color:'#5865F2'}}>Yükleniyor...</span>}</div>
             <div className="modal-actions" style={{justifyContent:'flex-end'}}><button className="discord-button blurple-btn" style={{width:'auto'}} onClick={() => setAyarlarAcik(false)}>Tamamlandı</button></div>
           </div>
         </div>
       )}
 
-      {/* SOL SUNUCU VE KANAL BARI */}
       <div className="server-sidebar-discord">
         <div className="server-icon-discord active"><img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6ca814282eca7172c6_icon_clyde_white_RGB.svg" alt="Discord" style={{width:'28px'}}/></div>
         <div className="server-separator"></div>
@@ -412,35 +480,25 @@ function App() {
         
         {yayinEkraniAcik && (
           <div className="screenshare-grid-discord">
-            {yerelEkranAkim && (
-              <div className="video-card-discord"><video autoPlay muted controls ref={el => {if(el) el.srcObject = yerelEkranAkim}} /><span className="video-label-discord">Canlı (Sen)</span></div>
-            )}
-            {aktifEkranYayinlari.map((s, i) => (
-              <div key={i} className="video-card-discord"><video autoPlay controls ref={el => {if(el && el.srcObject !== s) el.srcObject = s}} /><span className="video-label-discord live-badge">CANLI YAYIN</span></div>
-            ))}
+            {yerelEkranAkim && (<div className="video-card-discord"><video autoPlay muted controls ref={el => {if(el) el.srcObject = yerelEkranAkim}} /><span className="video-label-discord">Canlı (Sen)</span></div>)}
+            {aktifEkranYayinlari.map((s, i) => (<div key={i} className="video-card-discord"><video autoPlay controls ref={el => {if(el && el.srcObject !== s) el.srcObject = s}} /><span className="video-label-discord live-badge">CANLI YAYIN</span></div>))}
           </div>
         )}
 
         <div className="messages-container-discord" style={{ height: yayinEkraniAcik ? '50%' : '100%' }}>
           {mesajListesi.length === 0 ? (
-            <div className="empty-chat-discord">
-              <div className="welcome-icon">#</div><h2>{aktifKanal} kanalına hoş geldin!</h2><p>Bu, #{aktifKanal} kanalının başlangıcıdır.</p>
-            </div>
+            <div className="empty-chat-discord"><div className="welcome-icon">#</div><h2>{aktifKanal} kanalına hoş geldin!</h2><p>Bu, #{aktifKanal} kanalının başlangıcıdır.</p></div>
           ) : (
             mesajListesi.map((m, index) => {
               const oncekiMesaj = index > 0 ? mesajListesi[index - 1] : null;
               const ayniKisi = oncekiMesaj && oncekiMesaj.kullaniciAdi === m.kullaniciAdi && !m.yanitlanan;
-              // YENİ: Etiket Vurgusu (Eğer metinde adım geçiyorsa sarı arkaplan yap)
               const bahsedildim = m.dosyaTipi === 'text' && m.metin.includes(`@${kullaniciAdi}`);
 
               return (
                 <div key={index} className={`message-discord ${ayniKisi ? 'grouped' : ''} ${yanitlananMesaj?.mesajId === m.mesajId ? 'highlight-reply' : ''} ${bahsedildim ? 'mentioned-message' : ''}`}>
                   {m.yanitlanan && (
                     <div className="replied-message-wrapper" onClick={(e) => {e.stopPropagation(); setSeciliProfil(m.yanitlanan);}}>
-                      <div className="reply-spine"></div>
-                      <div className="replied-avatar" style={avatarStili(m.yanitlanan.renk, m.yanitlanan.avatarResmi)}></div>
-                      <span className="replied-username" style={{color: m.yanitlanan.renk}}>@{m.yanitlanan.kullaniciAdi}</span>
-                      <span className="replied-text">{m.yanitlanan.dosyaTipi === 'text' ? m.yanitlanan.metin : 'Medya gönderdi'}</span>
+                      <div className="reply-spine"></div><div className="replied-avatar" style={avatarStili(m.yanitlanan.renk, m.yanitlanan.avatarResmi)}></div><span className="replied-username" style={{color: m.yanitlanan.renk}}>@{m.yanitlanan.kullaniciAdi}</span><span className="replied-text">{m.yanitlanan.dosyaTipi === 'text' ? m.yanitlanan.metin : 'Medya gönderdi'}</span>
                     </div>
                   )}
 
@@ -448,14 +506,21 @@ function App() {
                   
                   <div className="message-content-discord">
                     {!ayniKisi && (
-                      <div className="message-header-discord">
-                        <span className="message-username-discord clickable" style={{color: m.renk}} onClick={(e) => {e.stopPropagation(); setSeciliProfil(m);}}>{m.kullaniciAdi}</span>
-                        <span className="message-time-discord">{m.saat}</span>
-                      </div>
+                      <div className="message-header-discord"><span className="message-username-discord clickable" style={{color: m.renk}} onClick={(e) => {e.stopPropagation(); setSeciliProfil(m);}}>{m.kullaniciAdi}</span><span className="message-time-discord">{m.saat}</span></div>
                     )}
                     {ayniKisi && <div className="message-time-hover">{m.saat}</div>}
+                    
                     <div className="message-text-discord">
-                      {m.dosyaTipi === 'image' ? ( <img src={m.metin} alt="Görsel" className="chat-image" /> ) : m.dosyaTipi === 'video' ? ( <video src={m.metin} controls className="chat-video" /> ) : ( formatliMetin(m.metin) )}
+                      {/* YENİ: Ses Paneli Render'ı */}
+                      {m.dosyaTipi === 'sound' ? (
+                        <div className="soundboard-msg">
+                           <span className="sb-icon">{m.ikon}</span> <strong>{m.kullaniciAdi}</strong> bir ses çaldı: <span className="sb-name">{m.sesIsmi}</span>
+                        </div>
+                      ) : m.dosyaTipi === 'image' ? ( 
+                        <img src={m.metin} alt="Görsel" className="chat-image" /> 
+                      ) : m.dosyaTipi === 'video' ? ( 
+                        <video src={m.metin} controls className="chat-video" /> 
+                      ) : ( formatliMetin(m.metin) )}
                     </div>
                   </div>
                   
@@ -471,29 +536,56 @@ function App() {
         </div>
 
         <div className="message-input-area-discord">
-          {yazanKullanicilar.length > 0 && (
-            <div className="typing-indicator-discord">
-              <span className="dots-discord"><span>.</span><span>.</span><span>.</span></span>
-              <strong>{yazanKullanicilar.join(', ')}</strong> yazıyor...
-            </div>
-          )}
+          {yazanKullanicilar.length > 0 && (<div className="typing-indicator-discord"><span className="dots-discord"><span>.</span><span>.</span><span>.</span></span><strong>{yazanKullanicilar.join(', ')}</strong> yazıyor...</div>)}
 
-          {yanitlananMesaj && (
-             <div className="reply-banner">
-                <span>Şu kişiye yanıt veriliyor: <strong>@{yanitlananMesaj.kullaniciAdi}</strong></span>
-                <span className="cancel-reply" onClick={() => setYanitlananMesaj(null)}>❌</span>
-             </div>
-          )}
+          {yanitlananMesaj && (<div className="reply-banner"><span>Şu kişiye yanıt veriliyor: <strong>@{yanitlananMesaj.kullaniciAdi}</strong></span><span className="cancel-reply" onClick={() => setYanitlananMesaj(null)}>❌</span></div>)}
 
           {/* YENİ: EMOJİ SEÇİCİ PANELİ */}
           {emojiMenuAcik && (
             <div className="emoji-picker-discord animate-fade-in" onClick={(e) => e.stopPropagation()}>
               <div className="emoji-picker-header">Emojiler</div>
               <div className="emoji-grid">
-                {POPULER_EMOJILER.map(emj => (
-                  <span key={emj} className="emoji-item" onClick={() => emojiEkle(emj)}>{emj}</span>
+                {POPULER_EMOJILER.map(emj => (<span key={emj} className="emoji-item" onClick={() => emojiEkle(emj)}>{emj}</span>))}
+              </div>
+            </div>
+          )}
+
+          {/* YENİ: GIF SEÇİCİ PANELİ */}
+          {gifMenuAcik && (
+            <div className="emoji-picker-discord animate-fade-in" style={{width: '350px'}} onClick={(e) => e.stopPropagation()}>
+              <div className="emoji-picker-header">Trend GIF'ler</div>
+              <div className="gif-grid">
+                {POPULER_GIFLER.map((g, i) => (
+                  <img key={i} src={g} alt="GIF" className="gif-item" onClick={() => gifGonder(g)} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* YENİ: SES PANELİ (SOUNDBOARD) */}
+          {sesPaneliAcik && (
+            <div className="emoji-picker-discord animate-fade-in" style={{width: '380px'}} onClick={(e) => e.stopPropagation()}>
+              <div className="emoji-picker-header">🎧 Ses Paneli (Herkes duyar!)</div>
+              <div className="soundboard-grid">
+                {SOUNDBOARD_SESLERI.map(ses => (
+                  <div key={ses.id} className="soundboard-btn" onClick={() => sesCal(ses)}>
+                     <span className="sb-icon">{ses.ikon}</span>
+                     <span className="sb-text">{ses.isim}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* YENİ: KOMUT (SLASH) ÖNERİ PANELİ */}
+          {komutOnerisi && (
+            <div className="command-popup animate-fade-in">
+              <div className="command-header">Komutlar</div>
+              {KOMUTLAR.map(k => (
+                <div key={k.komut} className="command-item" onClick={() => {setMesaj(k.komut); setKomutOnerisi(false);}}>
+                   <strong>{k.komut}</strong> <span>{k.aciklama}</span>
+                </div>
+              ))}
             </div>
           )}
 
@@ -503,14 +595,14 @@ function App() {
             <input type="text" value={mesaj} onChange={mesajYazimiDegisti} placeholder={medyaYukleniyor ? "Medya aktarılıyor..." : `#${aktifKanal} kanalına mesaj gönder`} onKeyDown={(e) => e.key === 'Enter' && mesajGonder()} autoFocus disabled={medyaYukleniyor} className="chat-input-discord" />
             
             <div className="input-right-icons">
-               <span title="GIF" className="icon-btn" onClick={() => alert('Yakında eklenecek!')}>GIF</span>
-               <span title="Emoji Seç" className="icon-btn" onClick={(e) => { e.stopPropagation(); setEmojiMenuAcik(!emojiMenuAcik); }}>😊</span>
+               <span title="GIF Seç" className="icon-btn text-icon" onClick={(e) => { e.stopPropagation(); setGifMenuAcik(!gifMenuAcik); setEmojiMenuAcik(false); setSesPaneliAcik(false); }}>GIF</span>
+               <span title="Ses Paneli" className="icon-btn text-icon" onClick={(e) => { e.stopPropagation(); setSesPaneliAcik(!sesPaneliAcik); setEmojiMenuAcik(false); setGifMenuAcik(false); }}>🔊</span>
+               <span title="Emoji Seç" className="icon-btn" onClick={(e) => { e.stopPropagation(); setEmojiMenuAcik(!emojiMenuAcik); setGifMenuAcik(false); setSesPaneliAcik(false); }}>😊</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* SAĞ ÜYELER LİSTESİ */}
       <div className="members-sidebar-discord">
         <div className="members-list-content-discord">
           {['Çevrimiçi', 'Boşta', 'Rahatsız Etmeyin'].map((durum) => (
