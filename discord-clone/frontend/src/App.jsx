@@ -15,29 +15,17 @@ SES_BAGLANDI.volume = 0.5; SES_AYRILDI.volume = 0.5; SES_PING.volume = 0.7;
 
 const POPULER_EMOJILER = ['😀','😂','😍','😎','😭','😡','👍','🔥','❤️','🎉','✨','💀','👀','🤔','💯','🙌','👏','🤦‍♂️','😘','😁'];
 
-// YENİ: Ses Paneli (Soundboard) Dosyaları
 const SOUNDBOARD_SESLERI = [
   { id: 'airhorn', isim: 'Airhorn', ikon: '📢', url: 'https://www.myinstants.com/media/sounds/mlg-airhorn.mp3' },
   { id: 'vineboom', isim: 'Vine Boom', ikon: '💥', url: 'https://www.myinstants.com/media/sounds/vine-boom.mp3' },
   { id: 'cricket', isim: 'Cırcır Böceği', ikon: '🦗', url: 'https://www.myinstants.com/media/sounds/crickets.mp3' },
   { id: 'sadtrombone', isim: 'Sad Trombone', ikon: '🎺', url: 'https://www.myinstants.com/media/sounds/sadtrombone.mp3' },
   { id: 'anime-wow', isim: 'Anime Wow', ikon: '😲', url: 'https://www.myinstants.com/media/sounds/anime-wow-sound-effect.mp3' },
-  { id: 'dun-dun', isim: 'Ba Dum Tss', ikon: '🥁', url: 'https://www.myinstants.com/media/sounds/ba-dum-tsss.mp3' }
+  { id: 'dun-dun', isim: 'Ba Dum Tss', ikon: '🥁', url: 'https://www.myinstants.com/media/sounds/ba-dum-tsss.mp3' },
+  { id: 'bruh', isim: 'Bruh', ikon: '🤦', url: 'https://www.myinstants.com/media/sounds/movie_1.mp3' },
+  { id: 'fart', isim: 'Reverb Fart', ikon: '💨', url: 'https://www.myinstants.com/media/sounds/reverb-fart.mp3' }
 ];
 
-// YENİ: GIF Galerisi (Örnek Eğlence Paketleri)
-const POPULER_GIFLER = [
-  'https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif', // Wow
-  'https://media.giphy.com/media/11ISwbgCxEzMyY/giphy.gif', // Laugh
-  'https://media.giphy.com/media/26n6WywFabVv1k8aI/giphy.gif', // Popcorn
-  'https://media.giphy.com/media/yYSSBtDgbbRzq/giphy.gif', // Mind Blown
-  'https://media.giphy.com/media/Is1O1TWV0IGyI/giphy.gif', // Sad
-  'https://media.giphy.com/media/TdfyKrN7HGTIY/giphy.gif', // Thinking
-  'https://media.giphy.com/media/ZfK4cXKJTTay1Ava29/giphy.gif', // Hello
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcG56bWV5aDczNThveHpxZDBxYW5yZDUzaXo1emVtd2tueHVjZDBweiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LAKIIRqtM1dqE/giphy.gif', // Cat typing
-];
-
-// YENİ: Slash Komutları
 const KOMUTLAR = [
   { komut: '/zar', aciklama: '1 ile 6 arasında rastgele zar atar.' },
   { komut: '/yazitura', aciklama: 'Yazı mı tura mı atar.' }
@@ -74,10 +62,15 @@ function App() {
   const [ozelOdalar, setOzelOdalar] = useState([]);
   
   const [emojiMenuAcik, setEmojiMenuAcik] = useState(false);
-  const [gifMenuAcik, setGifMenuAcik] = useState(false);
   const [sesPaneliAcik, setSesPaneliAcik] = useState(false);
   const [seciliProfil, setSeciliProfil] = useState(null);
   const [komutOnerisi, setKomutOnerisi] = useState(false);
+
+  // YENİ: DİNAMİK GIF MOTORU STATE'LERİ
+  const [gifMenuAcik, setGifMenuAcik] = useState(false);
+  const [arananGif, setArananGif] = useState('');
+  const [canliGifler, setCanliGifler] = useState([]);
+  const [gifYukleniyor, setGifYukleniyor] = useState(false);
 
   const [medyaYukleniyor, setMedyaYukleniyor] = useState(false);
   const [ekranPaylasiliyor, setEkranPaylasiliyor] = useState(false);
@@ -163,18 +156,18 @@ function App() {
   useEffect(() => {
     socket.on('mesaj_al', (data) => {
       setMesajListesi((eski) => [...eski, data]);
-      
-      // YENİ: Canlı Ses Efekti Oynatıcı (Soundboard)
-      if (data.dosyaTipi === 'sound') {
-        const calinacakSes = new Audio(data.metin);
-        calinacakSes.volume = 0.6;
-        calinacakSes.play().catch(e => console.log(e));
-      }
-
       if (data.dosyaTipi === 'text' && data.metin.includes(`@${kullaniciAdi}`) && data.kullaniciAdi !== kullaniciAdi) {
         SES_PING.play().catch(e => console.log(e));
       }
     });
+
+    // YENİ: Hayalet Sesi Dinle ve Anında Çal (Sohbete kaydolmaz)
+    socket.on('ses_calindi_gizli', (url) => {
+      const calinacakSes = new Audio(url);
+      calinacakSes.volume = 0.8;
+      calinacakSes.play().catch(e => console.log("Ses oynatılamadı:", e));
+    });
+
     socket.on('gecmis_mesajlar', (eskiMesajlar) => setMesajListesi(eskiMesajlar));
     socket.on('kullanici_listesi', (liste) => setKanaldakiKullanicilar(liste.filter(k => k.durum !== 'Görünmez')));
     socket.on('sesteki_kullanicilar', (liste) => setSestekiKullanicilar(liste));
@@ -183,7 +176,7 @@ function App() {
     socket.on('kullanici_yazmayi_birakti', (kim) => setYazanKullanicilar(p => p.filter(k => k !== kim)));
     socket.on('mesaj_silindi', (id) => setMesajListesi(p => p.filter(m => m.mesajId !== id)));
 
-    return () => { socket.off('mesaj_al'); socket.off('gecmis_mesajlar'); socket.off('kullanici_listesi'); socket.off('sesteki_kullanicilar'); socket.off('odalar_guncellendi'); socket.off('kullanici_yaziyor'); socket.off('kullanici_yazmayi_birakti'); socket.off('mesaj_silindi'); };
+    return () => { socket.off('mesaj_al'); socket.off('ses_calindi_gizli'); socket.off('gecmis_mesajlar'); socket.off('kullanici_listesi'); socket.off('sesteki_kullanicilar'); socket.off('odalar_guncellendi'); socket.off('kullanici_yaziyor'); socket.off('kullanici_yazmayi_birakti'); socket.off('mesaj_silindi'); };
   }, [kullaniciAdi]);
 
   useEffect(() => {
@@ -215,33 +208,47 @@ function App() {
   const mikrofonuGecisYap = () => { if (medyaAkisiRef.current) { const track = medyaAkisiRef.current.getAudioTracks()[0]; track.enabled = !track.enabled; setMikrofonAcik(track.enabled); } };
   const ekranPaylasiminiDegistir = async () => { if (ekranPaylasiliyor) { if (ekranAkisiRef.current) { ekranAkisiRef.current.getTracks().forEach(t => t.stop()); Object.values(peerBaglantilari.current).forEach(peer => { const senders = peer.getSenders().filter(s => s.track && s.track.kind === 'video'); senders.forEach(s => peer.removeTrack(s)); }); } ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); } else { try { const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); ekranAkisiRef.current = stream; setYerelEkranAkim(stream); setEkranPaylasiliyor(true); stream.getTracks().forEach(track => { Object.values(peerBaglantilari.current).forEach(peer => peer.addTrack(track, stream)); track.onended = () => { ekranAkisiRef.current = null; setYerelEkranAkim(null); setEkranPaylasiliyor(false); Object.values(peerBaglantilari.current).forEach(peer => { const senders = peer.getSenders().filter(s => s.track && s.track.kind === 'video'); senders.forEach(s => peer.removeTrack(s)); }); }; }); } catch(err) { } } };
 
-  // YENİ: Slash Komutlarını Dinle
-  const mesajYazimiDegisti = (e) => {
-    const val = e.target.value;
-    setMesaj(val);
-    
-    if (val.startsWith('/')) { setKomutOnerisi(true); } 
-    else { setKomutOnerisi(false); }
+  // YENİ: DİNAMİK GIF ARAMA MOTORU (TENOR API)
+  const gifleriGetir = async (aramaKelimesi = '') => {
+    setGifYukleniyor(true);
+    // Herkese açık Tenor test API anahtarı (Discord'un resmi GIF sağlayıcısı)
+    const url = aramaKelimesi === '' 
+      ? `https://g.tenor.com/v1/trending?key=LIVDSRZULELA&limit=30`
+      : `https://g.tenor.com/v1/search?q=${aramaKelimesi}&key=LIVDSRZULELA&limit=30`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const gifLinkleri = data.results.map(g => g.media[0].gif.url);
+      setCanliGifler(gifLinkleri);
+    } catch(err) { console.log("GIF Çekilemedi"); }
+    finally { setGifYukleniyor(false); }
+  };
 
+  // GIF Menüsü açıldığında otomatik trend GIF'leri yükle
+  useEffect(() => {
+    if (gifMenuAcik) gifleriGetir();
+  }, [gifMenuAcik]);
+
+  const gifGonder = (gifUrl) => {
+    socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: gifUrl, dosyaTipi: 'image', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi, yanitlanan: yanitlananMesaj });
+    setGifMenuAcik(false); setYanitlananMesaj(null);
+  };
+
+  const sesCal = (sesObj) => {
+    // YENİ: Sesi mesaj olarak değil, "Hayalet Veri" olarak gönder!
+    socket.emit('ses_cal_gizli', { kanal: aktifKanal, url: sesObj.url });
+    setSesPaneliAcik(false);
+  };
+
+  const mesajYazimiDegisti = (e) => {
+    const val = e.target.value; setMesaj(val);
+    if (val.startsWith('/')) { setKomutOnerisi(true); } else { setKomutOnerisi(false); }
     socket.emit('yaziyor', { kanal: aktifKanal, kullaniciAdi });
     clearTimeout(yazmaZamanlayici.current);
     yazmaZamanlayici.current = setTimeout(() => { socket.emit('yazmayi_birakti', { kanal: aktifKanal, kullaniciAdi }); }, 1500);
   };
 
   const emojiEkle = (emoji) => { setMesaj(prev => prev + emoji); setEmojiMenuAcik(false); };
-  
-  // YENİ: Ses Paneli Tetikleyici
-  const sesCal = (sesObj) => {
-    socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: sesObj.url, sesIsmi: sesObj.isim, ikon: sesObj.ikon, dosyaTipi: 'sound', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi });
-    setSesPaneliAcik(false);
-  };
-
-  // YENİ: GIF Gönderme
-  const gifGonder = (gifUrl) => {
-    socket.emit('mesaj_gonder', { id: socket.id, kullaniciAdi, metin: gifUrl, dosyaTipi: 'image', saat: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), kanal: aktifKanal, renk: avatarRenk, avatarResmi, yanitlanan: yanitlananMesaj });
-    setGifMenuAcik(false);
-    setYanitlananMesaj(null);
-  };
 
   const mesajGonder = () => {
     if (mesaj.trim() === '') return;
@@ -249,7 +256,6 @@ function App() {
     let gonderilecekMetin = mesaj;
     let sistemMesaji = false;
 
-    // YENİ: Eğik Çizgi Komutları Yürütme
     if (mesaj === '/zar') {
       const zar = Math.floor(Math.random() * 6) + 1;
       gonderilecekMetin = `🎲 **${kullaniciAdi}** bir zar attı ve **${zar}** geldi!`;
@@ -299,14 +305,7 @@ function App() {
   const durumRengiGetir = (durum) => { if(durum === 'Çevrimiçi') return '#23a559'; if(durum === 'Boşta') return '#f0b232'; if(durum === 'Rahatsız Etmeyin') return '#f23f43'; return '#80848e'; };
   const grupluKullanicilar = { 'Çevrimiçi': kanaldakiKullanicilar.filter(k => k.durum === 'Çevrimiçi'), 'Boşta': kanaldakiKullanicilar.filter(k => k.durum === 'Boşta'), 'Rahatsız Etmeyin': kanaldakiKullanicilar.filter(k => k.durum === 'Rahatsız Etmeyin') };
 
-  // EKRANI KAPATAN TIKLAMA YÖNETİCİSİ
-  const arkaPlanaTiklandi = () => {
-    setEmojiMenuAcik(false);
-    setGifMenuAcik(false);
-    setSesPaneliAcik(false);
-    setSeciliProfil(null);
-    setKomutOnerisi(false);
-  };
+  const arkaPlanaTiklandi = () => { setEmojiMenuAcik(false); setGifMenuAcik(false); setSesPaneliAcik(false); setSeciliProfil(null); setKomutOnerisi(false); };
 
   if (!girisYapildi) {
     return (
@@ -474,7 +473,6 @@ function App() {
         </div>
       </div>
 
-      {/* SOHBET ALANI */}
       <div className="chat-area-discord">
         <div className="chat-header-discord"><span className="hash-discord" style={{fontSize:'24px', marginRight:'10px'}}>#</span><h3>{aktifKanal}</h3></div>
         
@@ -509,18 +507,8 @@ function App() {
                       <div className="message-header-discord"><span className="message-username-discord clickable" style={{color: m.renk}} onClick={(e) => {e.stopPropagation(); setSeciliProfil(m);}}>{m.kullaniciAdi}</span><span className="message-time-discord">{m.saat}</span></div>
                     )}
                     {ayniKisi && <div className="message-time-hover">{m.saat}</div>}
-                    
                     <div className="message-text-discord">
-                      {/* YENİ: Ses Paneli Render'ı */}
-                      {m.dosyaTipi === 'sound' ? (
-                        <div className="soundboard-msg">
-                           <span className="sb-icon">{m.ikon}</span> <strong>{m.kullaniciAdi}</strong> bir ses çaldı: <span className="sb-name">{m.sesIsmi}</span>
-                        </div>
-                      ) : m.dosyaTipi === 'image' ? ( 
-                        <img src={m.metin} alt="Görsel" className="chat-image" /> 
-                      ) : m.dosyaTipi === 'video' ? ( 
-                        <video src={m.metin} controls className="chat-video" /> 
-                      ) : ( formatliMetin(m.metin) )}
+                      {m.dosyaTipi === 'image' ? ( <img src={m.metin} alt="Görsel" className="chat-image" /> ) : m.dosyaTipi === 'video' ? ( <video src={m.metin} controls className="chat-video" /> ) : ( formatliMetin(m.metin) )}
                     </div>
                   </div>
                   
@@ -540,7 +528,6 @@ function App() {
 
           {yanitlananMesaj && (<div className="reply-banner"><span>Şu kişiye yanıt veriliyor: <strong>@{yanitlananMesaj.kullaniciAdi}</strong></span><span className="cancel-reply" onClick={() => setYanitlananMesaj(null)}>❌</span></div>)}
 
-          {/* YENİ: EMOJİ SEÇİCİ PANELİ */}
           {emojiMenuAcik && (
             <div className="emoji-picker-discord animate-fade-in" onClick={(e) => e.stopPropagation()}>
               <div className="emoji-picker-header">Emojiler</div>
@@ -550,34 +537,33 @@ function App() {
             </div>
           )}
 
-          {/* YENİ: GIF SEÇİCİ PANELİ */}
+          {/* YENİ: DİNAMİK ARAMA KUTULU GIF PANELİ */}
           {gifMenuAcik && (
-            <div className="emoji-picker-discord animate-fade-in" style={{width: '350px'}} onClick={(e) => e.stopPropagation()}>
-              <div className="emoji-picker-header">Trend GIF'ler</div>
-              <div className="gif-grid">
-                {POPULER_GIFLER.map((g, i) => (
-                  <img key={i} src={g} alt="GIF" className="gif-item" onClick={() => gifGonder(g)} />
+            <div className="emoji-picker-discord animate-fade-in" style={{width: '380px', height: '400px', display: 'flex', flexDirection: 'column'}} onClick={(e) => e.stopPropagation()}>
+              <div className="emoji-picker-header" style={{paddingBottom: '8px'}}>
+                 <input type="text" value={arananGif} onChange={(e) => { setArananGif(e.target.value); gifleriGetir(e.target.value); }} placeholder="Tenor ile GIF Ara..." className="gif-search-input" autoFocus/>
+              </div>
+              <div className="gif-grid" style={{flex: 1, maxHeight: 'none'}}>
+                {gifYukleniyor ? ( <div style={{padding: '20px', color: '#b5bac1', textAlign: 'center', width: '100%'}}>Yükleniyor...</div> ) : canliGifler.map((g, i) => (
+                  <img key={i} src={g} alt="GIF" className="gif-item-dynamic" onClick={() => gifGonder(g)} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* YENİ: SES PANELİ (SOUNDBOARD) */}
           {sesPaneliAcik && (
             <div className="emoji-picker-discord animate-fade-in" style={{width: '380px'}} onClick={(e) => e.stopPropagation()}>
-              <div className="emoji-picker-header">🎧 Ses Paneli (Herkes duyar!)</div>
+              <div className="emoji-picker-header">🎧 Ses Paneli (Gizli Yayın)</div>
               <div className="soundboard-grid">
                 {SOUNDBOARD_SESLERI.map(ses => (
                   <div key={ses.id} className="soundboard-btn" onClick={() => sesCal(ses)}>
-                     <span className="sb-icon">{ses.ikon}</span>
-                     <span className="sb-text">{ses.isim}</span>
+                     <span className="sb-icon">{ses.ikon}</span><span className="sb-text">{ses.isim}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* YENİ: KOMUT (SLASH) ÖNERİ PANELİ */}
           {komutOnerisi && (
             <div className="command-popup animate-fade-in">
               <div className="command-header">Komutlar</div>
